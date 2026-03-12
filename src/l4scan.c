@@ -9,17 +9,29 @@ int main(int argc, char** argv) {
         return EXIT_INVALID_ARGUMENT;
     }
    
-    if(scanner.parameter_flags & (1 << HELP_FLG_POS)) {
+    if(scanner.parameter_flags & HELP_FLG) {
         return EXIT_SUCCESS;
     }
 
     debug_print(&scanner);
+    // handle -i parameter
+    if(scanner.interface == NULL) {
+        print_interfaces(NULL);
+        return EXIT_SUCCESS;
+    }
+    else {
+        if(print_interfaces(scanner.interface)) {
+            return EXIT_INVALID_ARGUMENT;
+        }
+    }
+
+
     return EXIT_SUCCESS;
 }
 
 ExitEnum debug_print(ScannerPtr scanner) {
     fprintf(stdout, "HOSTNAME: %s\n", scanner->hostname);
-    if(scanner->parameter_flags & (1 << INTERFACE_FLG_POS)) {
+    if(scanner->parameter_flags & INTERFACE_FLG) {
         if(scanner->interface == NULL) {
            fprintf(stdout, "INTERFACE: ALL\n"); 
         }

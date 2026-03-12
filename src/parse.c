@@ -8,19 +8,17 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
         return EXIT_INVALID_ARGUMENT;
     }
 
-    scanner->hostname = NULL;
-    scanner->interface = NULL;
     scanner->timeout_time = 1000;
     
     for(int i = 1; i < argc; i++) {
         char* argument = argv[i];
         // interface argument
         if(!strcmp(argument, "-i")) {
-            if(scanner->parameter_flags & (1 << INTERFACE_FLG_POS)) {
+            if(scanner->parameter_flags & INTERFACE_FLG) {
                 fprintf(stderr, "Multiple uses of arg `%s`\n", argument);
                 return EXIT_INVALID_ARGUMENT;
             }
-            scanner->parameter_flags |= (1 << INTERFACE_FLG_POS);
+            scanner->parameter_flags |= INTERFACE_FLG;
 
             if(i + 1 >= argc) {
                 return EXIT_SUCCESS;
@@ -39,12 +37,12 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
         // help
         else if(!strcmp(argument, "--help") || !strcmp(argument, "-h")) {
             fprintf(stdout, "%s", help_message);
-            scanner->parameter_flags |= (1 << HELP_FLG_POS);
+            scanner->parameter_flags |= HELP_FLG;
             return EXIT_SUCCESS;
         }
         // TCP ports
         else if(!strcmp(argument, "-t")) {
-            if( scanner->parameter_flags & (1 << TCP_FLG_POS)) {
+            if( scanner->parameter_flags & TCP_FLG) {
                 fprintf(stderr, "Multiple uses of arg `%s`\n", argument);
                 return EXIT_INVALID_ARGUMENT;
             }
@@ -61,11 +59,11 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
                 );
                 return EXIT_INVALID_ARGUMENT;
             }
-            scanner->parameter_flags |= (1 << TCP_FLG_POS);
+            scanner->parameter_flags |= TCP_FLG;
         }
         // UDP port handling
         else if(!strcmp(argument, "-u")) {
-            if(scanner->parameter_flags & (1 << UDP_FLG_POS)) {
+            if(scanner->parameter_flags & UDP_FLG) {
                 fprintf(stderr, "Multiple uses of arg `%s`\n", argument);
                 return EXIT_INVALID_ARGUMENT;
             }
@@ -82,11 +80,11 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
                 );
                 return EXIT_INVALID_ARGUMENT;
             }
-            scanner->parameter_flags |= (1 << UDP_FLG_POS);
+            scanner->parameter_flags |= UDP_FLG;
         }
-        // timeout time param
+        // timeout time
         else if(!strcmp(argument, "-w")) {
-            if(scanner->parameter_flags & (1 << TIMEOUT_FLG_POS)) {
+            if(scanner->parameter_flags & TIMEOUT_FLG) {
                 fprintf(stderr, "Multiple uses of arg `%s`\n", argument);
                 return EXIT_INVALID_ARGUMENT;
             }
@@ -98,16 +96,23 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
             // convert value to int
             char* check;
             long val;
+            errno = 0;
             val = strtol(argv[i + 1], &check, NUMBER_SYSTEM);
-            if (*check != '\0' || val <= 0 || val > INT_MAX) {
+            if (errno != 0 || 
+                *check != '\0' || 
+                val <= 0 ||
+                val > INT_MAX || 
+                check == argv[i + 1]) 
+            {
                 fprintf(stderr, 
                     "value of `-w` Needs to be a number `%s` is Not a number\n", 
                     argv[i + 1]
                 );
                 return EXIT_INVALID_ARGUMENT;
             }
+
             scanner->timeout_time = (unsigned int) val;
-            scanner->parameter_flags |= (1 << TIMEOUT_FLG_POS);
+            scanner->parameter_flags |= TIMEOUT_FLG;
             i++;
         }
         else if(argument[0] == '-') {
@@ -116,18 +121,28 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
         }
         // HOST
         else {
-            if(scanner->parameter_flags & (1 << HOSTNAME_FLG_POS)) {
+            if(scanner->parameter_flags & HOSTNAME_FLG) {
                 fprintf(stderr, "Multiple hostnames provided, try using parameter -help\n");
                 return EXIT_INVALID_ARGUMENT;
             }
     
             scanner->hostname = argv[i];
-            scanner->parameter_flags |= (1 << HOSTNAME_FLG_POS);
+            scanner->parameter_flags |= HOSTNAME_FLG;
         }
     }
 
-    if(!(scanner->parameter_flags & (1 << HOSTNAME_FLG_POS))) {
+    if(!(scanner->parameter_flags & HOSTNAME_FLG)) {
         fprintf(stderr, "No hostname provided, Hostname is required\n");
+        return EXIT_INVALID_ARGUMENT;
+    }
+    if(!(scanner->parameter_flags & INTERFACE_FLG)) {
+        fprintf(stderr, "No interface provided, Interface is required\n");
+        return EXIT_INVALID_ARGUMENT;
+    }
+    if(!(scanner->parameter_flags & TCP_FLG) && 
+        !(scanner->parameter_flags & UDP_FLG)) 
+        {
+        fprintf(stderr, "No ports specified, you need to provide atleast one port to scan\n");
         return EXIT_INVALID_ARGUMENT;
     }
     return EXIT_SUCCESS;
@@ -135,9 +150,10 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
 
 ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
     char* string_check_ptr;
+    errno = 0;
     long first_value = strtol(input, &string_check_ptr, NUMBER_SYSTEM);
     // number is in invalid 
-    if(first_value < 0 || first_value > MAX_PORTS) {
+    if(errno != 0 || first_value <= 0 || first_value > MAX_PORTS || string_check_ptr == input) {
         return EXIT_INVALID_ARGUMENT;
     }
 
@@ -153,10 +169,15 @@ ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
     if(*string_check_ptr == '-') {
         char* end_ptr = string_check_ptr + 1;
         // find the end of range
+        errno = 0;
         long end_value = strtol(end_ptr, &string_check_ptr, NUMBER_SYSTEM);
-        if(end_value < 0 || end_value > MAX_PORTS ||
-                *string_check_ptr != '\0' ||
-                (unsigned long) first_value > (unsigned long) end_value) {
+        if( errno != 0 || 
+            end_value <= 0 || 
+            end_value > MAX_PORTS || 
+            *string_check_ptr != '\0' ||
+            (unsigned long) first_value > (unsigned long) end_value ||
+            end_ptr == string_check_ptr)
+        {
             return EXIT_INVALID_ARGUMENT;
         }
 
@@ -174,7 +195,11 @@ ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
         while(1) {
             first_value = strtol(str, &string_check_ptr, NUMBER_SYSTEM);
             // strtol errors
-            if(first_value < 0 || first_value > MAX_PORTS || string_check_ptr == str) {
+            if(errno != 0 || 
+                first_value < 0 || 
+                first_value > MAX_PORTS || 
+                string_check_ptr == str) 
+            {
                 return EXIT_INVALID_ARGUMENT;
             }
             // add to array (0 if strtol failed)
