@@ -8,7 +8,8 @@
 CC=gcc
 CFLAGS= -std=c11 -pedantic -Wall -Wextra
 FILE_LOC= src/
-OBJ= 	l4scan.o
+OBJ= 	l4scan.o \
+		parse.o
 OUT= ipk-L4-scan
 
 #utils
@@ -24,7 +25,7 @@ ZIP_NAME=xluptak00
 all: $(OUT)
 
 $(OUT): $(OBJ)
-	$(CC) -o $(OUT) $(OBJ)
+	$(CC) $(CFLAGS) -o $(OUT) $(OBJ)
 
 %.o: $(FILE_LOC)%.c
 	$(CC) $(CFLAGS) -o $@ -c $<

@@ -1,2 +1,6 @@
+#compiled programs
 *.o
 ipk-L4-scan
+
+#env
+.vscode
