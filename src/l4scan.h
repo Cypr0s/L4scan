@@ -2,6 +2,9 @@
 #define L4SCAN_H
 
 #include "parse.h"
+#include "hostname.h"   // hostname
+#include "interface.h"  // interface
 
 
-#endif
+
+#endif // L4SCAN_H

@@ -4,29 +4,34 @@ ExitEnum debug_print(ScannerPtr scanner);
 
 int main(int argc, char** argv) {
     // handle input arguments
-    Scanner scanner = {0,};
+    Scanner scanner = {0};
     if(parse_arguments(argc, argv, &scanner)) {
-        return EXIT_INVALID_ARGUMENT;
+        return ERR_INVALID_ARGUMENT;
     }
    
     if(scanner.parameter_flags & HELP_FLG) {
-        return EXIT_SUCCESS;
+        return ERR_SUCCESS;
     }
 
     debug_print(&scanner);
     // handle -i parameter
     if(scanner.interface == NULL) {
         print_interfaces(NULL);
-        return EXIT_SUCCESS;
+        return ERR_SUCCESS;
     }
     else {
         if(print_interfaces(scanner.interface)) {
-            return EXIT_INVALID_ARGUMENT;
+            return ERR_INVALID_ARGUMENT;
         }
     }
+    // handle hostname (get ips from hostname)
+    struct addrinfo* adresses;
+    ExitEnum err = get_addresses_from_hostname(scanner.hostname, &adresses);
+    if(err) {
+        return err;
+    }
 
-
-    return EXIT_SUCCESS;
+    return ERR_SUCCESS;
 }
 
 ExitEnum debug_print(ScannerPtr scanner) {
@@ -55,5 +60,5 @@ ExitEnum debug_print(ScannerPtr scanner) {
             fprintf(stdout, "UDP PORT: %lu\n", i);
         }
     }
-    return EXIT_SUCCESS;
+    return ERR_SUCCESS;
 }

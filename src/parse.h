@@ -8,12 +8,14 @@
 #include <stdlib.h> // strtol, NULL
 
 
-#define HOSTNAME_FLG (1 << 1) 
-#define INTERFACE_FLG (1 << 2) 
-#define UDP_FLG (1 << 3) 
-#define TCP_FLG (1 << 4) 
-#define TIMEOUT_FLG (1 << 5) 
-#define HELP_FLG (1 << 6) 
+#define HOSTNAME_FLG (1 << 0) 
+#define INTERFACE_FLG (1 << 1) 
+#define UDP_FLG (1 << 2) 
+#define TCP_FLG (1 << 3) 
+#define TIMEOUT_FLG (1 << 4) 
+#define HELP_FLG (1 << 5) 
+#define IPV4_FLG (1 << 6)
+#define IPV6_FLG (1 << 7)
 
 
 #define MAX_PORTS USHRT_MAX
@@ -40,4 +42,4 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner);
 
 ExitEnum convert_str_to_nums(const char* input, unsigned long* arr);
 
-#endif
+#endif // PARSE_H

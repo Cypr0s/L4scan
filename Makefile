@@ -4,13 +4,15 @@
 #	date: 	created: 	11.3.2026
 #			last edit:	11.3.2026
 
-#compiling (without gnu11 it would not compile because of IFF_UP)
+#compiling
 CC=gcc
-CFLAGS= -std=gnu11 -pedantic -Wall -Wextra
+CFLAGS= -std=gnu17 -pedantic -Wall -Wextra
 FILE_LOC= src/
 OBJ= 	l4scan.o 	\
 		parse.o		\
-		interface.o
+		interface.o	\
+		util.o		\
+		hostname.o
 OUT= ipk-L4-scan
 
 #utils
