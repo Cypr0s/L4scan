@@ -8,7 +8,8 @@ typedef enum {
     ERR_FAILURE = 1,
     ERR_INVALID_ARGUMENT = 2,
     ERR_GETIFADDRS = 3,
-    ERR_HOSTNAME = 4
+    ERR_HOSTNAME = 4,
+    ERR_SOCKET = 5,
 } ExitEnum;
 
 #endif

@@ -1,36 +1,59 @@
+/** -------------- IPK 1. project - L4 Scanner -----------------
+ * @file    l4scan.c
+ * @author  Kristian Luptak <xluptak00>
+ * @date    creation:   11.3.2026
+ *          updated:    15.3.2026
+ * @brief   File handles the input of program (main function), calls corresponding
+ * 			modules to handle, input arguments, and handles the whole program flow.
+ */
+
+
 #include "l4scan.h"
 
 ExitEnum debug_print(ScannerPtr scanner);
 
+/**
+ * @def main
+ * @brief entry and exit point of progam
+ */
 int main(int argc, char** argv) {
-    // handle input arguments
     Scanner scanner = {0};
+
+	// handle input arguments
     if(parse_arguments(argc, argv, &scanner)) {
         return ERR_INVALID_ARGUMENT;
     }
-   
+	// help message flag, return with exit code 0
     if(scanner.parameter_flags & HELP_FLG) {
         return ERR_SUCCESS;
     }
 
-    debug_print(&scanner);
     // handle -i parameter
-    if(scanner.interface == NULL) {
+	// Check if corresponding interface exists or print interfaces and return
+    if(scanner.interface != NULL && print_interfaces(scanner.interface)) {
+		return ERR_INVALID_ARGUMENT;
+    }
+    else {
         print_interfaces(NULL);
         return ERR_SUCCESS;
     }
-    else {
-        if(print_interfaces(scanner.interface)) {
-            return ERR_INVALID_ARGUMENT;
-        }
-    }
-    // handle hostname (get ips from hostname)
-    struct addrinfo* adresses;
-    ExitEnum err = get_addresses_from_hostname(scanner.hostname, &adresses);
+
+    // handle hostname (get ips from hostname), store them in addrinfo structs, 
+	// store types of ip versions in scanner which will be further used for sockets, ..
+    struct addrinfo* addresses;
+    ExitEnum err = get_addresses_from_hostname(scanner.hostname, &addresses, &scanner);
     if(err) {
         return err;
     }
+	Sockets socks;
+	if(create_sockets(&scanner, &socks)) {
+		freeaddrinfo(addresses);
+		destroy_sockets(&socks);
+		return ERR_SOCKET;
+	}
 
+	destroy_sockets(&socks);
+	freeaddrs(addresses); // free allocated structs
     return ERR_SUCCESS;
 }
 
@@ -62,3 +85,4 @@ ExitEnum debug_print(ScannerPtr scanner) {
     }
     return ERR_SUCCESS;
 }
+

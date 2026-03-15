@@ -1,3 +1,12 @@
+/** -------------- IPK 1. project - L4 Scanner -----------------
+ * @headerfile  hostname.h
+ * @author      Kristian Luptak <xluptak00>
+ * @date        creation:   12.3.2026
+ *              updated:    15.3.2026
+ * @brief       Header file contains declaration of functions used in hostname.c
+ */
+
+
 #ifndef HOSTNAME_H
 #define HOSTNAME_H
 
