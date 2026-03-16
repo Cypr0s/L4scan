@@ -10,5 +10,4 @@
 
 ExitEnum debug_print(ScannerPtr scanner);
 
-
 #endif // L4SCAN_H

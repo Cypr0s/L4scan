@@ -14,10 +14,42 @@
 #include <stdlib.h> // NULL
 #include <stdio.h>  // fprintf, stderr
 #include "error.h"  // errno, ExitEnum
-#include "parse.h"
+#include "parse.h"  // Scanner struct
+#include "sockets.h" // Sockets struct
+#include <stdbool.h>    // bool type
+#include <pthread.h>    // threads
+#include <ifaddrs.h>    // ifaddrs struct
+#include <pcap.h>       // pcap functions
 
 ExitEnum get_addresses_from_hostname(const char* input_hostname, 
                                         struct addrinfo** hostname_values,
                                         ScannerPtr scanner);
 
+typedef struct {
+    ScanEntryPtr entries;
+    unsigned short entries_count;
+    struct addrinfo* address;
+
+    int tcp_socket;
+    int udp_socket;
+    int timeout_time;
+    pcap_t* sniffer;
+} IPScan, *IPScanPtr;
+
+typedef struct {
+    unsigned short port;
+    PortStateEnum state;
+    PortTypeEnum protocol;
+} ScanEntry, *ScanEntryPtr;
+
+typedef enum {
+    OPEN,
+    FILTERED,
+    CLOSED
+} PortStateEnum;
+
+typedef enum {
+    TCP,
+    UDP
+} PortTypeEnum;
 #endif // HOSTNAME_H

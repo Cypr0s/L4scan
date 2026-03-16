@@ -17,6 +17,6 @@
 #include <stdio.h>      // prints, stdio
 #include <string.h>     // strcmp
 
-ExitEnum print_interfaces(const char* input);
+ExitEnum print_interfaces(const char* input, struct ifaddrs* interfaces);
 
 #endif // INTERFACE_H

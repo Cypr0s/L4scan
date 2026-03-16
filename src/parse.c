@@ -96,7 +96,7 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
             scanner->parameter_flags |= TCP_FLG;
 
             // converts range of ports string(eg. 80-443 or 67, 68, 69 or 65536) into bitmap
-            if(convert_str_to_nums(argv[++i],scanner->tcp_arr)) {
+            if(convert_str_to_nums(argv[++i],scanner->tcp_arr, &(scanner->tcp_count))) {
                 fprintf(stderr, 
                     "Value of `%s` Needs to be a number input `%s` is Not a number\n",
                     argument, argv[i]
@@ -124,7 +124,7 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
             scanner->parameter_flags |= UDP_FLG;
 
             // converts range of ports string(eg. 80-443 or 67, 68, 69 or 65536) into bitmap
-            if(convert_str_to_nums(argv[++i],scanner->udp_arr)) {
+            if(convert_str_to_nums(argv[++i],scanner->udp_arr, &(scanner->udp_count))) {
                 fprintf(stderr, 
                     "Value of `%s` Needs to be a number, input `%s` is Not a number\n",
                     argument, argv[i]
@@ -225,7 +225,7 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
  *          (eg. number is out of range for ports or invalid characters).
  *          ERR_SUCCESS(0) if no errors happened
  */
-ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
+ExitEnum convert_str_to_nums(const char* input, unsigned long* arr, unsigned short* count) {
     char* string_check_ptr; // strtol checker
     errno = 0;
     long first_value = strtol(input, &string_check_ptr, NUMBER_SYSTEM);
@@ -240,6 +240,7 @@ ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
 
         // move 1 to corresponding bit in bitmap
         ADD_TO_ARR(arr, first_value);
+        *count = 1U;
         return ERR_SUCCESS;
     } // single port
 
@@ -266,6 +267,7 @@ ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
         // set all bits in range to 1
         for(; (unsigned long) first_value <= (unsigned long) end_value; first_value++) {
             ADD_TO_ARR(arr, first_value);
+            (*count)++;
         }
         return ERR_SUCCESS;
     }   // range of ports 
@@ -275,6 +277,7 @@ ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
         // not proud of this
         char* str = string_check_ptr + 1;
         ADD_TO_ARR(arr, first_value);
+        *count += 1U;
 
         // loop thorough all all ports that are separated by `,`
         while(1) {
@@ -290,6 +293,8 @@ ExitEnum convert_str_to_nums(const char* input, unsigned long* arr) {
             }
             // add to array (0 if strtol failed)
             ADD_TO_ARR(arr, first_value);
+            (*count)++;
+
             if(*string_check_ptr == '\0') {
                 return ERR_SUCCESS;
             }

@@ -50,6 +50,65 @@ ExitEnum get_addresses_from_hostname(const char* input_hostname,
 } // get_addresses_from_hostname
 
 
-void scan_ipaddresses(void) {
+//
+ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks, struct ifaddrs* interfaces) {
+    IPScan scan = {0};
+    scan.entries = malloc(sizeof(ScanEntry) * (scanner->tcp_count + scanner->udp_count));
+    if(scan.entries == NULL) {
+        fprintf(stderr, "Malloc error\n");
+        return ERR_MALLOC;
+    }
+    scan.entries_count = scanner->tcp_count + scanner->udp_count;
+    scan.tcp_socket = -1;
+    scan.udp_socket = -1;
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t* handle = pcap_open_live(scanner->interface, BUFSIZ, 0, 50, errbuf);
+    if(handle == NULL) {
+        free(scan.entries);
+        return ERR_PCAP;
+    }
+ 
+    for(struct addrinfo* addr_ptr = addresses; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
+        struct ifaddrs* interface == NULL;
+        for(struct ifaddrs* inter_ptr = interfaces; inter_ptr != NULL; inter_ptr = inter_ptr->ifa_next) {
+            if  (inter_ptr->ifa_addr != NULL &&
+                inter_ptr->ifa_name != NULL && 
+                addr_ptr->ai_family == inter_ptr->ifa_addr->sa_family && 
+                !strcmp(inter_ptr->ifa_name, scanner->interface)) 
+            {
+                interface = inter_ptr;
+                break;
+            }
+        }
+        
+        // no valid interface was found
+        if(interface == NULL) {
+            fprintf(stderr, "No valid interface was found for address %s\n", addr_ptr->ai_canonname);
+            return ERR_NO_INTERFACE;
+        }
+        // setup correct sniffer filter based on ip version and protocol
+        char filter[128];
+        if(addr_ptr->ai_family == AF_INET) {
+            if(scanner->parameter_flags & TCP_FLG && scanner->parameter_flags & UDP_FLG) {
+                snprintf(filter, sizeof(filter), "icmp or ??  host %s", addr_ptr->ai_canonname);    // todo
+            }
+            else if(scanner->parameter_flags & UDP_FLG && !(scanner->parameter_flags & TCP_FLG)) {
+                snprintf(filter, sizeof(filter), "udp and dst host %s", addr_ptr->ai_canonname);
+            }
+            else {
+                snprintf(filter, sizeof(filter), "tcp and dst host %s", addr_ptr->ai_canonname);
+            }
+        }
+        else if(addr_ptr->ai_family == AF_INET6) {
 
+        }
+        // create 2 threads
+        pthread_t send, receive;
+        scan.address = addr_ptr;
+
+
+    }
+
+    free(scan.entries);
+    return ERR_SUCCESS;
 }

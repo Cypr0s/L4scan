@@ -48,7 +48,10 @@ typedef struct {
     unsigned int timeout_time;
     // bitmaps (inspiration taken from IJC 1. project)
     unsigned long udp_arr[(MAX_PORTS / LONG_BIT) + 1];
+    unsigned short udp_count; 
+
     unsigned long tcp_arr[(MAX_PORTS / LONG_BIT) + 1];
+    unsigned short tcp_count;
 } Scanner, *ScannerPtr;
 
 
@@ -78,6 +81,6 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner);
  *          (eg. number is out of range for ports or invalid characters).
  *          ERR_SUCCESS(0) if no errors happened
  */
-ExitEnum convert_str_to_nums(const char* input, unsigned long* arr);
+ExitEnum convert_str_to_nums(const char* input, unsigned long* arr, unsigned short* count);
 
 #endif // PARSE_H

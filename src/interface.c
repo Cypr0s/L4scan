@@ -21,9 +21,7 @@
  *          ERR_SUCCESS(0) if input is null and interfaces were printed or 
  *          provided interface exists
  */
-ExitEnum print_interfaces(const char* input) {
-    struct ifaddrs* interfaces; // linked list of interfaces
-
+ExitEnum print_interfaces(const char* input, struct ifaddrs* interfaces) {
     if(getifaddrs(&interfaces) == -1) {
         perror("getifaddrs");
         return ERR_GETIFADDRS;
@@ -49,8 +47,6 @@ ExitEnum print_interfaces(const char* input) {
             }
         }  
     }
-    // free interfaes
-    freeifaddrs(interfaces);
 
     // check if there was atleast one interface if name was provided
     if(input != NULL) {

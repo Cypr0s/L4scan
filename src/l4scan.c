@@ -30,11 +30,14 @@ int main(int argc, char** argv) {
 
     // handle -i parameter
 	// Check if corresponding interface exists or print interfaces and return
-    if(scanner.interface != NULL && print_interfaces(scanner.interface)) {
+    struct ifaddrs* interfaces;
+    if(scanner.interface != NULL && print_interfaces(scanner.interface, interfaces)) {
+        freeifaddrs(interfaces);
 		return ERR_INVALID_ARGUMENT;
     }
     else {
-        print_interfaces(NULL);
+        print_interfaces(NULL, &interfaces);
+        freeifaddrs(interfaces);
         return ERR_SUCCESS;
     }
 
@@ -52,8 +55,12 @@ int main(int argc, char** argv) {
 		return ERR_SOCKET;
 	}
 
+    scan_ipaddresses();
+
+
 	destroy_sockets(&socks);
-	freeaddrs(addresses); // free allocated structs
+    freeifaddrs(interfaces);
+	freeaddrinfo(addresses); // free allocated structs
     return ERR_SUCCESS;
 }
 
@@ -85,4 +92,3 @@ ExitEnum debug_print(ScannerPtr scanner) {
     }
     return ERR_SUCCESS;
 }
-

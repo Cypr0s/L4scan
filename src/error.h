@@ -10,6 +10,11 @@ typedef enum {
     ERR_GETIFADDRS = 3,
     ERR_HOSTNAME = 4,
     ERR_SOCKET = 5,
+    ERR_NO_INTERFACE = 6,
+    ERR_PCAP = 7,
+
+
+    ERR_MALLOC= 99,
 } ExitEnum;
 
 #endif
