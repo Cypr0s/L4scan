@@ -4,3 +4,6 @@ ipk-L4-scan
 
 #env
 .vscode
+
+#random
+*.zip

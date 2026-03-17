@@ -10,20 +10,23 @@
 #ifndef HOSTNAME_H
 #define HOSTNAME_H
 
-#include <netdb.h>  // getaddrinfo
-#include <stdlib.h> // NULL
-#include <stdio.h>  // fprintf, stderr
-#include "error.h"  // errno, ExitEnum
-#include "parse.h"  // Scanner struct
-#include "sockets.h" // Sockets struct
+#include <netdb.h>      // getaddrinfo
+#include <stdlib.h>     // NULL
+#include <stdio.h>      // fprintf, stderr
+#include "error.h"      // errno, ExitEnum
+#include "parse.h"      // Scanner struct
+#include "sockets.h"    // Sockets struct
 #include <stdbool.h>    // bool type
 #include <pthread.h>    // threads
 #include <ifaddrs.h>    // ifaddrs struct
 #include <pcap.h>       // pcap functions
+#include "util.h"       // ScanEntry struct, filling scan entries
 
 ExitEnum get_addresses_from_hostname(const char* input_hostname, 
                                         struct addrinfo** hostname_values,
                                         ScannerPtr scanner);
+
+ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks, struct ifaddrs* interfaces);
 
 typedef struct {
     ScanEntryPtr entries;
@@ -36,20 +39,4 @@ typedef struct {
     pcap_t* sniffer;
 } IPScan, *IPScanPtr;
 
-typedef struct {
-    unsigned short port;
-    PortStateEnum state;
-    PortTypeEnum protocol;
-} ScanEntry, *ScanEntryPtr;
-
-typedef enum {
-    OPEN,
-    FILTERED,
-    CLOSED
-} PortStateEnum;
-
-typedef enum {
-    TCP,
-    UDP
-} PortTypeEnum;
 #endif // HOSTNAME_H
