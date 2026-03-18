@@ -12,6 +12,7 @@ typedef enum {
     ERR_SOCKET = 5,
     ERR_NO_INTERFACE = 6,
     ERR_PCAP = 7,
+    ERR_MUTEX = 8,
 
 
     ERR_MALLOC= 99,

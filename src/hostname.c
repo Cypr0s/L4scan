@@ -50,136 +50,102 @@ ExitEnum get_addresses_from_hostname(const char* input_hostname,
 } // get_addresses_from_hostname
 
 
-//
-ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks, struct ifaddrs* interfaces) {
-    IPScan scan = {0};
-    scan.entries = malloc(sizeof(ScanEntry) * (scanner->tcp_count + scanner->udp_count));
-    if(scan.entries == NULL) {
-        fprintf(stderr, "Malloc error\n");
-        return ERR_MALLOC;
-    }
-    create_scan_entries(scanner, scan.entries);
-    scan.entries_count = scanner->tcp_count + scanner->udp_count;
-    scan.timeout_time = scanner->timeout_time;
-    scan.tcp_socket = -1;
-    scan.udp_socket = -1;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(scanner->interface, BUFSIZ, 0, 50, errbuf);
-    if(handle == NULL) {
-        free(scan.entries);
-        return ERR_PCAP;
+// too much spaghetti, refactoring needed
+ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks) {
+    IPScan ipscan = {0};
+    ExitEnum err = ip_scan_ctor(&ipscan, scanner);
+    if(err) {
+        return err;
     }
  
     for(struct addrinfo* addr_ptr = addresses; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
-        struct ifaddrs* interface = NULL;
-        for(struct ifaddrs* inter_ptr = interfaces; inter_ptr != NULL; inter_ptr = inter_ptr->ifa_next) {
-            if  (inter_ptr->ifa_addr != NULL &&
-                inter_ptr->ifa_name != NULL && 
-                addr_ptr->ai_family == inter_ptr->ifa_addr->sa_family && 
-                !strcmp(inter_ptr->ifa_name, scanner->interface)) 
-            {
-                interface = inter_ptr;
-                break;
-            }
-        }
-        
-        // no valid interface was found
-        if(interface == NULL) {
-            fprintf(stderr, "No valid interface was found for address %s\n", addr_ptr->ai_canonname);
-            return ERR_NO_INTERFACE;
-        }
+
+        set_ip_scanner(&ipscan, addr_ptr, socks, scanner);
     
-        // obtain IP addres as string for printing anf filter creation
-        char ip_string[INET6_ADDRSTRLEN];
-        char filter[128];
-        if(addr_ptr->ai_family == AF_INET) {
-            // create string of ipv4 address
-            inet_ntop(AF_INET, &((struct sockaddr_in*)addr_ptr->ai_addr)->sin_addr, ip_string, sizeof(ip_string));
-            // create filter for sniffer
-            if(scanner->parameter_flags & TCP_FLG && scanner->parameter_flags & UDP_FLG) {
-                snprintf(filter, sizeof(filter), "src host %s and (icmp or tcp host)", ip_string);
-            }
-            else if(scanner->parameter_flags & UDP_FLG && !(scanner->parameter_flags & TCP_FLG)) {
-                snprintf(filter, sizeof(filter), "src host %s and icmp", ip_string);
-            }
-            else {
-                snprintf(filter, sizeof(filter), "src host %s and tcp", ip_string);
-            }
-            // set sockets (if theres no flag for tcp or udp the socket will be -1 - its uninitialized)
-            scan.tcp_socket = socks->tcp_ipv4_socket;
-            scan.udp_socket = socks->udp_ipv4_socket;
-        }
-        else if (addr_ptr->ai_family == AF_INET6) {
-            // create string of ipv6 address
-            inet_ntop(AF_INET6, &((struct sockaddr_in6*)addr_ptr->ai_addr)->sin6_addr, ip_string, sizeof(ip_string));
-            // create filter for sniffer
-            if(scanner->parameter_flags & TCP_FLG && scanner->parameter_flags & UDP_FLG) {
-                snprintf(filter, sizeof(filter), "src host %s and (icmp6 or tcp host)", ip_string);
-            }
-            else if(scanner->parameter_flags & UDP_FLG && !(scanner->parameter_flags & TCP_FLG)) {
-                snprintf(filter, sizeof(filter), "src host %s and icmp6", ip_string);
-            }
-            else {
-                snprintf(filter, sizeof(filter), "src host %s and tcp", ip_string);
-            }
-            // set sockets (if theres no flag for tcp or udp the socket will be -1 - its uninitialized)
-            scan.tcp_socket = socks->tcp_ipv6_socket;
-            scan.udp_socket = socks->udp_ipv6_socket;
-        }
-        else {
-            fprintf(stderr, "Invalid hostname family name\n");
-            return ERR_HOSTNAME;
-        }
-        
-        scan.address = addr_ptr;
-
-
         // create 2 threads
         pthread_t send, receive;
-        pthread_create(&send, NULL, send_messages, (void*) &scan);
-        pthread_create(&receive, NULL, receive_messages, (void*) &scan);
+        pthread_create(&send, NULL, send_messages, (void*) &ipscan);
+        pthread_create(&receive, NULL, receive_messages, (void*) &ipscan);
         pthread_join(send, NULL);
         pthread_join(receive, NULL);
 
-        // print port states
-        for(int i = 0; i < scan.entries_count; i++) {
-            char port[4] = scan.entries[i].protocol == TCP ? "tcp" : "udp";
-            switch(scan.entries[i].state) {
-                case OPEN:
-                    print_formated(ip_string, port, port, "open\n");
-                    break;
-                case FILTERED:
-                    print_formated(ip_string, port, port, "filtered\n");
-                    break;
-                case CLOSED:
-                    print_formated(ip_string, port, port, "closed\n");
-                    break;
-                default:
-                    break;
-            }
-            scan.entries[i].state = WAITING;
-        }
+        print_entry_states(&ipscan);
     }
 
-    free(scan.entries);
+    ip_scan_dtor(&ipscan);
     return ERR_SUCCESS;
 }
 
-
+// needs refactoring
 void* send_messages(void* arg) {
     IPScanPtr scan = (IPScanPtr) arg;
-    for(int i = 0; i < scan->entries_count; i++) {
-        if(scan->entries[i].protocol == UDP) {
+    char message[32] = "Im a suspicious message";
+    while(scan->entries_count != scan->completed_entries) {
+        for(int i = 0; i < scan->entries_count; i++) {
+            if(scan->entries[i].protocol == TCP) {
 
+            }
+            else if(scan->entries[i].protocol == UDP) {
+                sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &scan->entries[i].sent_time);
+            scan->entries[i].state = SENT_ONCE;
         }
-        else {
-            
-        }
+        check_entries();
     }
+    pcap_breakloop(scan->sniffer);
     return NULL;
 }
 
-
+// needs refactoring
 void* receive_messages(void* arg) {
+    IPScanPtr scan = (IPScanPtr) arg;
+    pcap_loop(scan->sniffer, -1, handle_packet, (unsigned char*) scan);
     return NULL;
+}
+
+void* handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const unsigned char* packet) {
+    IPScanPtr scan = (IPScanPtr) arg;
+
+    pthread_mutex_lock(&scan->mutex);
+
+    pthread_mutex_unlock(&scan->mutex);
+    return NULL;
+}
+
+send_blah(void) {
+    for(scan->entries_count; i++) {
+        PortTypeEnum protocol = scan->entries[i].protocol;
+        switch(scan->entries[i].state) {
+            case OPEN: case CLOSED: case FILTERED:
+                continue;
+
+            case WAITING:
+                if(protocol == TCP) {
+                    create_packet();
+                    sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+                }
+                else if(protocol == UDP) {
+                    sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+                }
+                clock_gettime(CLOCK_MONOTONIC, &scan->entries[i].sent_time);
+
+                lock(&scan->mutex);
+                scan->entries[i].state = SENT_ONCE;
+                unlock(&scan->mutex);
+                break;
+            case SENT_ONCE:
+                // if timeout time hass passes, resed tcp packet, open udp
+                if(protocol == TCP) {
+                    create_packet();
+                    sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+                }
+ 
+                break;
+            case SENT_TWICE:
+                // tcp filtered
+            break;
+        
+        }
+    }
 }

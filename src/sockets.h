@@ -14,6 +14,7 @@
 #include "error.h"  // ExitEnum, errno
 #include "parse.h"  // Scanner struct
 #include <sys/socket.h> // sockets
+#include <netinet/in.h>
 
 
 // closes socket if it has a viable file_desctriptor

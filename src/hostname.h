@@ -20,23 +20,12 @@
 #include <pthread.h>    // threads
 #include <ifaddrs.h>    // ifaddrs struct
 #include <pcap.h>       // pcap functions
-#include "util.h"       // ScanEntry struct, filling scan entries
+#include "util.h"       // ScanEntry struct, filling scan entrier
 
 ExitEnum get_addresses_from_hostname(const char* input_hostname, 
                                         struct addrinfo** hostname_values,
                                         ScannerPtr scanner);
 
-ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks, struct ifaddrs* interfaces);
-
-typedef struct {
-    ScanEntryPtr entries;
-    unsigned short entries_count;
-    struct addrinfo* address;
-
-    int tcp_socket;
-    int udp_socket;
-    int timeout_time;
-    pcap_t* sniffer;
-} IPScan, *IPScanPtr;
+ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks);
 
 #endif // HOSTNAME_H

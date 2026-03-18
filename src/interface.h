@@ -16,6 +16,7 @@
 #include <ifaddrs.h>    // getifaddr, freeifaddr
 #include <stdio.h>      // prints, stdio
 #include <string.h>     // strcmp
+#include <netdb.h>      // addrinfo struct
 
 ExitEnum print_interfaces(const char* input, struct ifaddrs* interfaces);
 

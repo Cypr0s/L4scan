@@ -21,24 +21,25 @@ ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
     //ipv4 sockets
     if(scanner->parameter_flags & IPV4_FLG) {
         if(scanner->parameter_flags & TCP_FLG) {
-            socks->tcp_ipv4_socket = socket(AF_INET, SOCK_RAW, 0);
+            socks->tcp_ipv4_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
             CHECK_SOCKET(socks->tcp_ipv4_socket);
         }
 
         if(scanner->parameter_flags & UDP_FLG) {
-            socks->udp_ipv4_socket = socket(AF_INET, SOCK_DGRAM, 0);
+            socks->udp_ipv4_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             CHECK_SOCKET(socks->udp_ipv4_socket);
         }
+        // TODO, BIND SOCKETS TO IPV4 AND IPV6 INTERFACES
     }
     // ipv6 sockets
     if(scanner->parameter_flags & IPV6_FLG) {
         if(scanner->parameter_flags & TCP_FLG) {
-            socks->tcp_ipv6_socket = socket(AF_INET6, SOCK_RAW, 0);
+            socks->tcp_ipv6_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_TCP);
             CHECK_SOCKET(socks->tcp_ipv6_socket);
         }
 
         if(scanner->parameter_flags & UDP_FLG) {
-            socks->udp_ipv6_socket = socket(AF_INET6, SOCK_DGRAM, 0);
+            socks->udp_ipv6_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
             CHECK_SOCKET(socks->udp_ipv6_socket);
         }
     }
