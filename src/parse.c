@@ -65,7 +65,7 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
 
             /*  set interface name (interface name handling is done in module 
                 inteface.c called in main()) */ 
-            scanner->interface = argv[++i];
+            scanner->interface_name = argv[++i];
         } // interface argument
 
         //  help argument (-h, --help)

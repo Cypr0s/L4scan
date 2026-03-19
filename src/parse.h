@@ -17,6 +17,7 @@
 #include <stdio.h>  // prints, stdio/err
 #include <string.h> // strcmp
 #include <stdlib.h> // strtol, NULL
+#include <netdb.h>  // INET6_ADDRSTRLEN
 
 // flags for parameter presence used in Scanner struct (Scanner struct has one char bit flag)
 #define HOSTNAME_FLG (1 << 0) 
@@ -43,7 +44,10 @@
 typedef struct {
     // stores all args
     char parameter_flags;
-    char* interface;
+    char* interface_name;
+    char interface_ipv4[INET6_ADDRSTRLEN];
+    char interface_ipv6[INET6_ADDRSTRLEN];
+
     char* hostname;
     unsigned int timeout_time;
     // bitmaps (inspiration taken from IJC 1. project)

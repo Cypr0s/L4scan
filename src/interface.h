@@ -16,8 +16,10 @@
 #include <ifaddrs.h>    // getifaddr, freeifaddr
 #include <stdio.h>      // prints, stdio
 #include <string.h>     // strcmp
-#include <netdb.h>      // addrinfo struct
+#include <arpa/inet.h>
 
-ExitEnum print_interfaces(const char* input, struct ifaddrs* interfaces);
+void print_interfaces(void);
+
+ExitEnum get_interfaces(ScannerPtr scanner);
 
 #endif // INTERFACE_H

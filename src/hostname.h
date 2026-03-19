@@ -20,7 +20,7 @@
 #include <pthread.h>    // threads
 #include <ifaddrs.h>    // ifaddrs struct
 #include <pcap.h>       // pcap functions
-#include "util.h"       // ScanEntry struct, filling scan entrier
+#include "ip_scan_struct.h"
 
 ExitEnum get_addresses_from_hostname(const char* input_hostname, 
                                         struct addrinfo** hostname_values,

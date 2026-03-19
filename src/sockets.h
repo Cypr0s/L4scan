@@ -14,27 +14,16 @@
 #include "error.h"  // ExitEnum, errno
 #include "parse.h"  // Scanner struct
 #include <sys/socket.h> // sockets
-#include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 // closes socket if it has a viable file_desctriptor
 #define CLOSE_SOCKET(socket) do {   \
     if(socket != -1) {              \
         close(socket);              \
-    }                               \                
-} while(0)
-
-
-// checks if socket is NOT a valid file desctitor and if its not it returns ERR_SOCKET 
-#define CHECK_SOCKET(socket) do {    \
-    if((socket) == -1) {              \
-        perror("socket");           \
-        return ERR_SOCKET;          \
     }                               \
 } while(0)
 
-
-//
 typedef struct {
     int tcp_ipv4_socket;
     int udp_ipv4_socket;

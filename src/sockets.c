@@ -20,27 +20,76 @@
 ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
     //ipv4 sockets
     if(scanner->parameter_flags & IPV4_FLG) {
+        // create ipv4 bind address
+        struct sockaddr_in socket_interface;
+        if(inet_pton(AF_INET, scanner->interface_ipv4, &(socket_interface.sin_addr))) {
+            perror("inet_pton");
+            return ERR_FAILURE;
+        }
+
+        socket_interface.sin_family = AF_INET;
+        socket_interface.sin_port = 0;
+
         if(scanner->parameter_flags & TCP_FLG) {
             socks->tcp_ipv4_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-            CHECK_SOCKET(socks->tcp_ipv4_socket);
+            if(socks->tcp_ipv4_socket == -1) {              
+                perror("socket");
+                return ERR_SOCKET;
+            }   
+            if(bind(socks->tcp_ipv4_socket,&socket_interface, sizeof(socket_interface))) {
+                perror("bind");
+                return ERR_SOCKET;
+            }
         }
 
         if(scanner->parameter_flags & UDP_FLG) {
             socks->udp_ipv4_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-            CHECK_SOCKET(socks->udp_ipv4_socket);
+            if(socks->udp_ipv4_socket == -1) {              
+                perror("socket");
+                return ERR_SOCKET;
+            }
+
+            if(bind(socks->udp_ipv4_socket,&socket_interface, sizeof(socket_interface))) {
+                perror("bind");
+                return ERR_SOCKET;
+            }
         }
-        // TODO, BIND SOCKETS TO IPV4 AND IPV6 INTERFACES
+
     }
     // ipv6 sockets
     if(scanner->parameter_flags & IPV6_FLG) {
+
+        struct sockaddr_in socket_interface;
+        if(inet_pton(AF_INET6, scanner->interface_ipv4, &(socket_interface.sin_addr))){
+            perror("inet_pton");
+            return ERR_FAILURE;
+        }
+
+        socket_interface.sin_family = AF_INET6;
+        socket_interface.sin_port = 0;
+
         if(scanner->parameter_flags & TCP_FLG) {
             socks->tcp_ipv6_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_TCP);
-            CHECK_SOCKET(socks->tcp_ipv6_socket);
+            if(socks->tcp_ipv6_socket == -1) {              
+                perror("socket");
+                return ERR_SOCKET;
+            }   
+            if(bind(socks->tcp_ipv6_socket, &socket_interface, sizeof(socket_interface))) {
+                perror("bind");
+                return ERR_SOCKET;
+            }
         }
 
         if(scanner->parameter_flags & UDP_FLG) {
             socks->udp_ipv6_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-            CHECK_SOCKET(socks->udp_ipv6_socket);
+            if(socks->udp_ipv6_socket == -1) {              
+                perror("socket");
+                return ERR_SOCKET;
+            }   
+            if(bind(socks->udp_ipv6_socket,&socket_interface, sizeof(socket_interface))) {
+                perror("bind");
+                return ERR_SOCKET;
+            }
         }
     }
 }

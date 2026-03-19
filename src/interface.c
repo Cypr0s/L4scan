@@ -21,7 +21,8 @@
  *          ERR_SUCCESS(0) if input is null and interfaces were printed or 
  *          provided interface exists
  */
-ExitEnum print_interfaces(const char* input, struct ifaddrs* interfaces) {
+void print_interfaces(void) {
+    struct ifaddrs* interfaces;
     if(getifaddrs(&interfaces) == -1) {
         perror("getifaddrs");
         return ERR_GETIFADDRS;
@@ -33,27 +34,65 @@ ExitEnum print_interfaces(const char* input, struct ifaddrs* interfaces) {
             continue;
         }
 
-        // input value provided (check if theres interface with that name)
-        if(input != NULL) {
-            if(!strcmp(input, ptr->ifa_name)) {
-                return ERR_SUCCESS;
+        // print only once each
+        if(ptr->ifa_addr->sa_family == AF_PACKET) {
+            fprintf(stdout, "%s\n", ptr->ifa_name);
+        }  
+    }
+    freeifaddrs(interfaces);
+    return ERR_SUCCESS;
+} // print_interfaces
+
+
+ExitEnum get_interfaces(ScannerPtr scanner) {
+    struct ifaddrs* interfaces;
+
+    if(getifaddrs(&interfaces) == -1) {
+        perror("getifaddrs");
+        return ERR_GETIFADDRS;
+    }
+
+    for(struct ifaddrs* ptr = interfaces; ptr != NULL; ptr = ptr->ifa_next){
+        if(ptr->ifa_name == NULL || ptr->ifa_addr == NULL) { // show only active ones
+            continue;
+        }
+
+        // print only once each
+        if(ptr->ifa_addr->sa_family == AF_INET && scanner->interface_ipv4 != "") {
+            if(inet_ntop(AF_INET, &((struct sockaddr_in*)ptr->ifa_addr)->sin_addr, scanner->interface_ipv4, sizeof(scanner->interface_ipv4)) == NULL){
+                perror("inet_ntop");
+                freeifaddrs(interfaces);
+                return ERR_FAILURE;
             }
         }
-        // no value provided print all interfaces
-        else {
-            // print only once each
-            if(ptr->ifa_addr->sa_family == AF_PACKET) {
-                fprintf(stdout, "%s\n", ptr->ifa_name);
+
+        if(ptr->ifa_addr->sa_family == AF_INET6 && scanner->interface_ipv6 != "") {
+            if(inet_ntop(AF_INET, &((struct sockaddr_in*)ptr->ifa_addr)->sin_addr, scanner->interface_ipv4, sizeof(scanner->interface_ipv4)) == NULL){
+                perror("inet_ntop");
+                freeifaddrs(interfaces);
+                return ERR_FAILURE;
             }
         }  
     }
-
-    // check if there was atleast one interface if name was provided
-    if(input != NULL) {
-        fprintf(stderr, "`%s` is not a valid interface\n", input);
-        return ERR_INVALID_ARGUMENT;
+    freeifaddrs(interfaces);
+    if(scanner->interface_ipv6 == "" && scanner->interface_ipv4 == "") {
+        fprintf(stderr, "No valid interfaces found to name `%s`\n", scanner->interface_name);
+        return ERR_NO_INTERFACE;
     }
+
+    if(scanner->parameter_flags & IPV4_FLG && scanner->interface_ipv4 == "") {
+        fprintf(stderr, "Hostname has ipv4 required to check but `%s` has no ipv4 interface\n", scanner->interface_name);
+        return ERR_NO_INTERFACE;
+    }
+
+    if(scanner->parameter_flags & IPV6_FLG && scanner->interface_ipv4 != "") {
+        fprintf(stderr, "Hostname has ipv6 required to check but `%s` has no ipv4 interface\n", scanner->interface_name);
+        return ERR_NO_INTERFACE; 
+    }
+
     return ERR_SUCCESS;
-} // print_interfaces
+
+    
+} // get_interfaces
 
 

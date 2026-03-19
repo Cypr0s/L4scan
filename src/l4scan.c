@@ -29,25 +29,29 @@ int main(int argc, char** argv) {
     }
 
     // handle -i parameter
-	// Check if corresponding interface exists or print interfaces and return
-    struct ifaddrs* interfaces;
-    if(scanner.interface != NULL && print_interfaces(scanner.interface, interfaces)) {
-        freeifaddrs(interfaces);
-		return ERR_INVALID_ARGUMENT;
-    }
-    else {
-        print_interfaces(NULL, &interfaces);
-        freeifaddrs(interfaces);
+	// print interfaces and return
+    if(scanner.interface_name != NULL) {
+        print_interfaces();
         return ERR_SUCCESS;
     }
 
-    // handle hostname (get ips from hostname), store them in addrinfo structs, 
-	// store types of ip versions in scanner which will be further used for sockets, ..
     struct addrinfo* addresses;
     ExitEnum err = get_addresses_from_hostname(scanner.hostname, &addresses, &scanner);
     if(err) {
         return err;
     }
+
+    // get the FIRST address ipv4 interface or/and ipv6 interface
+    ExitEnum err = get_interfaces(&scanner);
+    if(err) {
+        freeaddrinfo(addresses);
+        return err;
+    }
+
+    // handle hostname (get ips from hostname), store them in addrinfo structs, 
+	// store types of ip versions in scanner which will be further used for sockets, ..
+
+    // create sockets, bind them to correct interfaces
 	Sockets socks;
 	if(create_sockets(&scanner, &socks)) {
 		freeaddrinfo(addresses);
@@ -55,23 +59,27 @@ int main(int argc, char** argv) {
 		return ERR_SOCKET;
 	}
 
-    scan_ipaddresses();
+    // do the scanning
+    err = scan_ipaddresses(&scanner, addresses, &socks);
+    if(err) {
+        return err;
+    }
 
 
-	destroy_sockets(&socks);
-    freeifaddrs(interfaces);
-	freeaddrinfo(addresses); // free allocated structs
+	destroy_sockets(&socks); // free sockets
+	freeaddrinfo(addresses); // free addresses
     return ERR_SUCCESS;
 }
+
 
 ExitEnum debug_print(ScannerPtr scanner) {
     fprintf(stdout, "HOSTNAME: %s\n", scanner->hostname);
     if(scanner->parameter_flags & INTERFACE_FLG) {
-        if(scanner->interface == NULL) {
+        if(scanner->interface_name == NULL) {
            fprintf(stdout, "INTERFACE: ALL\n"); 
         }
         else {
-            fprintf(stdout, "INTERFACE: %s\n", scanner->interface);
+            fprintf(stdout, "INTERFACE: %s\n", scanner->interface_name);
         }
     }
     else {

@@ -78,22 +78,20 @@ ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, Socket
 
 // needs refactoring
 void* send_messages(void* arg) {
-    IPScanPtr scan = (IPScanPtr) arg;
+    IPScanPtr ipscan = (IPScanPtr) arg;
     char message[32] = "Im a suspicious message";
-    while(scan->entries_count != scan->completed_entries) {
-        for(int i = 0; i < scan->entries_count; i++) {
-            if(scan->entries[i].protocol == TCP) {
-
-            }
-            else if(scan->entries[i].protocol == UDP) {
-                sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
-            }
-            clock_gettime(CLOCK_MONOTONIC, &scan->entries[i].sent_time);
-            scan->entries[i].state = SENT_ONCE;
-        }
-        check_entries();
+    struct sockaddr address;
+    address.sa_family = ipscan->address_family;
+    socklen_t address_len = sizeof(address);
+    if(inet_pton(ipscan->address_family, ipscan->target_ip, &(address.sa_data))) {
+        perror("inet_pton");
+        return ERR_FAILURE;
     }
-    pcap_breakloop(scan->sniffer);
+
+    while(ipscan->entries_count != ipscan->completed_entries) {
+        handle_messages_fsm(ipscan, &address, address_len, &message);
+    }
+    pcap_breakloop(ipscan->sniffer);
     return NULL;
 }
 
@@ -113,34 +111,44 @@ void* handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const 
     return NULL;
 }
 
-send_blah(void) {
-    for(scan->entries_count; i++) {
-        PortTypeEnum protocol = scan->entries[i].protocol;
-        switch(scan->entries[i].state) {
+void handle_messages_fsm(IPScanPtr ipscan, struct sockaddr* target_addr, socklen_t target_addr_len, char* message) {
+    for(int i = 0; i < ipscan->entries_count; i++) {
+        PortTypeEnum protocol = ipscan->entries[i].protocol;
+        switch(ipscan->entries[i].state) {
             case OPEN: case CLOSED: case FILTERED:
                 continue;
 
             case WAITING:
                 if(protocol == TCP) {
                     create_packet();
-                    sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+                    sendto(ipscan->udp_socket, message, sizeof(message), 0, target_addr, target_addr_len);
                 }
                 else if(protocol == UDP) {
-                    sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+                    sendto(ipscan->udp_socket, message, sizeof(message), 0, target_addr, target_addr_len);
                 }
-                clock_gettime(CLOCK_MONOTONIC, &scan->entries[i].sent_time);
+                clock_gettime(CLOCK_MONOTONIC, &(ipscan->entries[i].sent_time));
 
-                lock(&scan->mutex);
-                scan->entries[i].state = SENT_ONCE;
-                unlock(&scan->mutex);
+                lock(&(ipscan->mutex));
+                ipscan->entries[i].state = SENT_ONCE;
+                unlock((&ipscan->mutex));
                 break;
             case SENT_ONCE:
                 // if timeout time hass passes, resed tcp packet, open udp
-                if(protocol == TCP) {
-                    create_packet();
-                    sendto(scan->udp_socket, message, sizeof(message), 0, scan->address->ai_addr, scan->address->ai_addrlen);
+                struct timespec current_time;
+                clock_gettime(CLOCK_MONOTONIC, &current_time);
+                if(current_time.tv_sec * 60 >= ipscan->entries[i].sent_time) {
+                    if(protocol == UDP) {
+                        ipscan->entries[i].state = OPEN;
+                        ipscan->completed_entries++;
+                    }
+
+                    if(protocol == TCP) {
+                        create_packet();
+                        sendto(ipscan->udp_socket, message, sizeof(message), 0, ipscan->address->ai_addr, scan->address->ai_addrlen);
+                        clock_gettime(CLOCK_MONOTONIC, &(ipscan->entries[i].sent_time));
+                        ipscan->
+                    }
                 }
- 
                 break;
             case SENT_TWICE:
                 // tcp filtered
