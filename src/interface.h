@@ -18,7 +18,7 @@
 #include <string.h>     // strcmp
 #include <arpa/inet.h>
 
-void print_interfaces(void);
+ExitEnum print_interfaces(void);
 
 ExitEnum get_interfaces(ScannerPtr scanner);
 

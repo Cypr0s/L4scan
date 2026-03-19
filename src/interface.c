@@ -21,7 +21,7 @@
  *          ERR_SUCCESS(0) if input is null and interfaces were printed or 
  *          provided interface exists
  */
-void print_interfaces(void) {
+ExitEnum print_interfaces(void) {
     struct ifaddrs* interfaces;
     if(getifaddrs(&interfaces) == -1) {
         perror("getifaddrs");
@@ -56,9 +56,11 @@ ExitEnum get_interfaces(ScannerPtr scanner) {
         if(ptr->ifa_name == NULL || ptr->ifa_addr == NULL) { // show only active ones
             continue;
         }
-
+        if(strcmp(ptr->ifa_name, scanner->interface_name)) {
+            continue;
+        }
         // print only once each
-        if(ptr->ifa_addr->sa_family == AF_INET && scanner->interface_ipv4 != "") {
+        if(ptr->ifa_addr->sa_family == AF_INET && scanner->interface_ipv4[0] == '\0') {
             if(inet_ntop(AF_INET, &((struct sockaddr_in*)ptr->ifa_addr)->sin_addr, scanner->interface_ipv4, sizeof(scanner->interface_ipv4)) == NULL){
                 perror("inet_ntop");
                 freeifaddrs(interfaces);
@@ -66,8 +68,8 @@ ExitEnum get_interfaces(ScannerPtr scanner) {
             }
         }
 
-        if(ptr->ifa_addr->sa_family == AF_INET6 && scanner->interface_ipv6 != "") {
-            if(inet_ntop(AF_INET, &((struct sockaddr_in*)ptr->ifa_addr)->sin_addr, scanner->interface_ipv4, sizeof(scanner->interface_ipv4)) == NULL){
+        if(ptr->ifa_addr->sa_family == AF_INET6 && scanner->interface_ipv6[0] == '\0') {
+            if(inet_ntop(AF_INET6, &((struct sockaddr_in6*)ptr->ifa_addr)->sin6_addr, scanner->interface_ipv6, sizeof(scanner->interface_ipv6)) == NULL){
                 perror("inet_ntop");
                 freeifaddrs(interfaces);
                 return ERR_FAILURE;
@@ -75,24 +77,22 @@ ExitEnum get_interfaces(ScannerPtr scanner) {
         }  
     }
     freeifaddrs(interfaces);
-    if(scanner->interface_ipv6 == "" && scanner->interface_ipv4 == "") {
+    if(scanner->interface_ipv6[0] == '\0' && scanner->interface_ipv4[0] == '\0') {
         fprintf(stderr, "No valid interfaces found to name `%s`\n", scanner->interface_name);
         return ERR_NO_INTERFACE;
     }
 
-    if(scanner->parameter_flags & IPV4_FLG && scanner->interface_ipv4 == "") {
+    if(scanner->parameter_flags & IPV4_FLG && scanner->interface_ipv4[0] == '\0') {
         fprintf(stderr, "Hostname has ipv4 required to check but `%s` has no ipv4 interface\n", scanner->interface_name);
         return ERR_NO_INTERFACE;
     }
 
-    if(scanner->parameter_flags & IPV6_FLG && scanner->interface_ipv4 != "") {
+    if(scanner->parameter_flags & IPV6_FLG && scanner->interface_ipv6[0] == '\0') {
         fprintf(stderr, "Hostname has ipv6 required to check but `%s` has no ipv4 interface\n", scanner->interface_name);
         return ERR_NO_INTERFACE; 
     }
 
-    return ERR_SUCCESS;
-
-    
+    return ERR_SUCCESS;  
 } // get_interfaces
 
 

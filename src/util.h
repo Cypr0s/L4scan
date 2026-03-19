@@ -3,9 +3,10 @@
 
 #include <stdio.h> // fprintf
 #include "ip_scan_struct.h"
+#include "sockets.h"
 
 
-void print_formated(char* ip_adress, char* port_number, char* protocol, char* status);
+void print_formated(char* ip_adress, unsigned short port_number, char* protocol, char* status);
 
 void print_entry_states(IPScanPtr ipscan);
 

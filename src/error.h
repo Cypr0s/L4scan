@@ -13,6 +13,7 @@ typedef enum {
     ERR_NO_INTERFACE = 6,
     ERR_PCAP = 7,
     ERR_MUTEX = 8,
+    ERR_CLOCK = 9,
 
 
     ERR_MALLOC= 99,

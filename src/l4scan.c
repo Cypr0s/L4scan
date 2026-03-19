@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
     if(parse_arguments(argc, argv, &scanner)) {
         return ERR_INVALID_ARGUMENT;
     }
+
 	// help message flag, return with exit code 0
     if(scanner.parameter_flags & HELP_FLG) {
         return ERR_SUCCESS;
@@ -30,19 +31,19 @@ int main(int argc, char** argv) {
 
     // handle -i parameter
 	// print interfaces and return
-    if(scanner.interface_name != NULL) {
-        print_interfaces();
-        return ERR_SUCCESS;
+    if(scanner.interface_name == NULL) {
+        return print_interfaces();
     }
 
+    // get all ip addresses
     struct addrinfo* addresses;
-    ExitEnum err = get_addresses_from_hostname(scanner.hostname, &addresses, &scanner);
+    ExitEnum err = get_addresses_from_hostname(&addresses, &scanner);
     if(err) {
         return err;
     }
 
-    // get the FIRST address ipv4 interface or/and ipv6 interface
-    ExitEnum err = get_interfaces(&scanner);
+    // get the FIRST address of ipv4 interface or/and ipv6 interface
+    err = get_interfaces(&scanner);
     if(err) {
         freeaddrinfo(addresses);
         return err;

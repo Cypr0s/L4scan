@@ -1,15 +1,14 @@
 #include "util.h"
 
 
-void print_formated(char* ip_adress, char* port_number, char* protocol, char* status) {
-    fprintf(stdout,"%s %s %s %s", ip_adress, port_number, protocol, status);
+void print_formated(char* ip_adress, unsigned short port_number, char* protocol, char* status) {
+    fprintf(stdout,"%s %d %s %s", ip_adress, port_number, protocol, status);
 }
 
 
 ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, struct addrinfo* address) {
     char ip_string[INET6_ADDRSTRLEN];
     char filter[128];
-    char* parameters;
 
     if(address->ai_family == AF_INET) {
         if(inet_ntop(AF_INET, &((struct sockaddr_in*)address->ai_addr)->sin_addr, ip_string, sizeof(ip_string)) == NULL){
@@ -30,6 +29,7 @@ ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, s
         ipscan->tcp_socket = socks->tcp_ipv4_socket;
         ipscan->udp_socket = socks->udp_ipv4_socket;
         strcpy(ipscan->source_ip, scanner->interface_ipv4);
+        ipscan->address_family = AF_INET;
     }
     else if (address->ai_family == AF_INET6) {
 
@@ -47,6 +47,7 @@ ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, s
         ipscan->tcp_socket = socks->tcp_ipv6_socket;
         ipscan->udp_socket = socks->udp_ipv6_socket;
         strcpy(ipscan->source_ip, scanner->interface_ipv6);
+        ipscan->address_family = AF_INET6;
     }
     else {
         fprintf(stderr, "Invalid hostname family name\n");
@@ -73,13 +74,13 @@ void print_entry_states(IPScanPtr ipscan) {
         char* protocol = ipscan->entries[i].protocol == TCP ? "tcp" : "udp";
         switch(ipscan->entries[i].state) {
             case OPEN:
-                print_formated(ipscan->target_ip, ipscan->entries[i].port, protocol, "open\n");
+                print_formated(ipscan->target_ip, ipscan->entries[i].target_port, protocol, "open\n");
                 break;
             case FILTERED:
-                print_formated(ipscan->target_ip, ipscan->entries[i].port, protocol, "filtered\n");
+                print_formated(ipscan->target_ip, ipscan->entries[i].target_port, protocol, "filtered\n");
                 break;
             case CLOSED:
-                print_formated(ipscan->target_ip, ipscan->entries[i].port, protocol, "closed\n");
+                print_formated(ipscan->target_ip, ipscan->entries[i].target_port, protocol, "closed\n");
                 break;
             default:
                 break;

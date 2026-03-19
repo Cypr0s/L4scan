@@ -15,6 +15,7 @@
 #include "parse.h"  // Scanner struct
 #include <sys/socket.h> // sockets
 #include <arpa/inet.h>
+#include <unistd.h>
 
 
 // closes socket if it has a viable file_desctriptor

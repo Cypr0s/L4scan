@@ -6,13 +6,17 @@
 
 #compiling
 CC=gcc
-CFLAGS= -std=gnu17 -pedantic -Wall -Wextra
+CFLAGS= -std=gnu17 -pedantic -Wall -Wextra -g
 FILE_LOC= src/
-OBJ= 	l4scan.o 	\
-		parse.o		\
-		interface.o	\
-		util.o		\
-		hostname.o
+LIBS=-pthread -lpcap
+
+OBJ= 	ip_scan_struct.o	\
+		l4scan.o 			\
+		parse.o				\
+		interface.o			\
+		util.o				\
+		hostname.o			\
+		sockets.o
 OUT= ipk-L4-scan
 
 #utils
@@ -28,7 +32,7 @@ ZIP_NAME=xluptak00
 all: $(OUT)
 
 $(OUT): $(OBJ)
-	$(CC) $(CFLAGS) -o $(OUT) $(OBJ)
+	$(CC) $(CFLAGS) -o $(OUT) $(OBJ) $(LIBS)
 
 %.o: $(FILE_LOC)%.c
 	$(CC) $(CFLAGS) -o $@ -c $<

@@ -4,15 +4,39 @@
 #include <stdio.h>      // fprintf
 #include "error.h"      // ExitEnum
 #include "parse.h"      // scanner struct
-#include "hostname.h"   // ScanEntry struct
 #include <netdb.h>      // addrinfo struct
+#include <pcap.h>
+#include <pthread.h>
 
 #define CREATE_ENTRY(entries, pos, proto, port_num) do {    \
-    entries[(pos)].port = (port_num);                       \
+    entries[(pos)].target_port = (port_num);                       \
     entries[(pos)].protocol = (proto);                      \
     entries[(pos)].state = WAITING;                         \
     entries[(pos)].sent_time = (struct timespec) {0};       \
 } while(0)
+
+
+typedef enum {
+    WAITING,
+    SENT_ONCE,
+    SENT_TWICE,
+    OPEN,
+    FILTERED,
+    CLOSED
+} PortStateEnum;
+
+typedef enum {
+    TCP,
+    UDP
+} PortTypeEnum;
+
+typedef struct {
+    unsigned short target_port;
+    unsigned short source_port; // maybe??
+    PortStateEnum state;
+    PortTypeEnum protocol;
+    struct timespec sent_time;
+} ScanEntry, *ScanEntryPtr;
 
 typedef struct {
     ScanEntryPtr entries;
@@ -30,28 +54,6 @@ typedef struct {
     pthread_mutex_t mutex;
     pcap_t* sniffer;
 } IPScan, *IPScanPtr;
-
-typedef struct {
-    unsigned short target_port;
-    unsigned short source_port; // maybe??
-    PortStateEnum state;
-    PortTypeEnum protocol;
-    struct timespec sent_time;
-} ScanEntry, *ScanEntryPtr;
-
-typedef enum {
-    WAITING,
-    SENT_ONCE,
-    SENT_TWICE,
-    OPEN,
-    FILTERED,
-    CLOSED
-} PortStateEnum;
-
-typedef enum {
-    TCP,
-    UDP
-} PortTypeEnum;
 
 ExitEnum ip_scan_ctor(IPScanPtr scan, ScannerPtr scanner);
 
