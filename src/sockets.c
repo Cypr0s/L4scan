@@ -25,7 +25,7 @@ ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
         
         socket_interface.sin_addr = scanner->interface_ipv4;
         socket_interface.sin_family = AF_INET;
-        socket_interface.sin_port = SOURCE_PORT;
+        socket_interface.sin_port = htons(SOURCE_PORT);
 
         if(scanner->parameter_flags & TCP_FLG) {
             socks->tcp_ipv4_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
@@ -33,8 +33,9 @@ ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
                 perror("socket");
                 return ERR_SOCKET;
             }   
-            if(bind(socks->tcp_ipv4_socket,(struct sockaddr*) &socket_interface, sizeof(socket_interface))) {
-                perror("bind");
+            int one = 1;
+            if(setsockopt(socks->tcp_ipv4_socket, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one)) < 0) {
+                perror("setsockopt IP_HDRINCL");
                 return ERR_SOCKET;
             }
         }
@@ -60,16 +61,17 @@ ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
         
         socket_interface.sin6_addr = scanner->interface_ipv6;
         socket_interface.sin6_family = AF_INET6;
-        socket_interface.sin6_port = SOURCE_PORT;
+        socket_interface.sin6_port = htons(SOURCE_PORT);
 
         if(scanner->parameter_flags & TCP_FLG) {
             socks->tcp_ipv6_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_TCP);
             if(socks->tcp_ipv6_socket == -1) {              
                 perror("socket");
                 return ERR_SOCKET;
-            }   
-            if(bind(socks->tcp_ipv6_socket, (struct sockaddr*) &socket_interface, sizeof(socket_interface))) {
-                perror("bind");
+            }
+            int one = 1;
+            if(setsockopt(socks->tcp_ipv6_socket, IPPROTO_IPV6, IPV6_HDRINCL, &one, sizeof(one)) < 0) {
+                perror("setsockopt IPV6_HDRINCL");
                 return ERR_SOCKET;
             }
         }
