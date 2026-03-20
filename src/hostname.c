@@ -55,17 +55,19 @@ ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, Socket
     if(err) {
         return err;
     }
- 
+
     for(struct addrinfo* addr_ptr = addresses; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
 
-        set_ip_filter(&ipscan, scanner, socks, addr_ptr);
+        set_filter(&ipscan, scanner, addr_ptr);
+        set_address(&ipscan, addr_ptr, scanner);
+        set_sockets(&ipscan, socks);
     
         // create 2 threads
-        pthread_t send;
+        pthread_t send, receive;
         pthread_create(&send, NULL, send_messages, (void*) &ipscan);
-        //pthread_create(&receive, NULL, receive_messages, (void*) &ipscan);
+        pthread_create(&receive, NULL, receive_messages, (void*) &ipscan);
         pthread_join(send, NULL);
-        //pthread_join(receive, NULL);
+        pthread_join(receive, NULL);
 
         print_entry_states(&ipscan);
     }
@@ -77,76 +79,72 @@ ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, Socket
 // needs refactoring
 void* send_messages(void* arg) {
     IPScanPtr ipscan = (IPScanPtr) arg;
-    struct sockaddr address;
-    address.sa_family = ipscan->address_family;
-    if(inet_pton(address.sa_family, ipscan->target_ip, &(address.sa_data)) == -1) {
-        perror("inet_pton");
-        return NULL;
-    }
 
-    while(ipscan->entries_count != ipscan->completed_entries) {
-        handle_messages_fsm(ipscan, &address);
+    while(1) {
+        pthread_mutex_lock(&(ipscan->mutex));
+        if(ipscan->entries_count == ipscan->completed_entries) {
+            pthread_mutex_unlock(&(ipscan->mutex));
+            break;
+        }
+        pthread_mutex_unlock(&(ipscan->mutex));
+    
+        if(handle_messages_fsm(ipscan)) {
+            break;
+        }
     }
     pcap_breakloop(ipscan->sniffer);
     return NULL;
 }
 
-// needs refactoring
-//void* receive_messages(void* arg) {
-    //IPScanPtr scan = (IPScanPtr) arg;
-    //pcap_loop(scan->sniffer, -1, handle_packet, (unsigned char*) scan);
-    //return NULL;
-//}
-
-//void* handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const unsigned char* packet) {
-    //IPScanPtr scan = (IPScanPtr) arg;
-
-    //pthread_mutex_lock(&scan->mutex);
-
-    //pthread_mutex_unlock(&scan->mutex);
-    //return NULL;
-//}
 
 // modularization needed, kinda finished???
-ExitEnum handle_messages_fsm(IPScanPtr ipscan, struct sockaddr* target_addr) {
+ExitEnum handle_messages_fsm(IPScanPtr ipscan) {
     int address_size = ipscan->address_family == AF_INET6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
     char message[32] = "Im a suspicious message";
     for(int i = 0; i < ipscan->entries_count; i++) {
         if(ipscan->entries[i].state == OPEN || ipscan->entries[i].state == CLOSED || ipscan->entries[i].state == FILTERED) {
             continue;
         }
-
         switch(ipscan->entries[i].state) {
             case OPEN: case CLOSED: case FILTERED:
                 continue;
             case WAITING:
                 pthread_mutex_lock(&(ipscan->mutex));
                 if(ipscan->entries[i].protocol == TCP) {
-                    continue;
+                    create_tcp_packet();
                     if(ipscan->address_family == AF_INET6) {
-                        ((struct sockaddr_in6*) target_addr)->sin6_port = htons(ipscan->entries[i].target_port);
+                        ipscan->target_ip.ipv6->sin6_port = htons(ipscan->entries[i].target_port);
+                        if(sendto(ipscan->tcp_socket, &message, strlen(message), 0, (struct sockaddr*) ipscan->target_ip.ipv6, address_size)) {
+                            perror("sendto");
+                            pthread_mutex_unlock(&(ipscan->mutex));
+                            return ERR_FAILURE;
+                        }
                     }
                     else {
-                        ((struct sockaddr_in*) target_addr)->sin_port = htons(ipscan->entries[i].target_port);
-                    }
-
-                    if(sendto(ipscan->tcp_socket, &message, strlen(message), 0,target_addr, address_size)) {
-                        perror("sendto");
-                        pthread_mutex_unlock(&(ipscan->mutex));
-                        return ERR_FAILURE;
+                        ipscan->target_ip.ipv4->sin_port = htons(ipscan->entries[i].target_port);
+                        if(sendto(ipscan->tcp_socket, &message, strlen(message), 0,(struct sockaddr*) ipscan->target_ip.ipv4, address_size)) {
+                            perror("sendto");
+                            pthread_mutex_unlock(&(ipscan->mutex));
+                            return ERR_FAILURE;
+                        }
                     }
                 }
                 else if(ipscan->entries[i].protocol == UDP) {
                     if(ipscan->address_family == AF_INET6) {
-                        ((struct sockaddr_in6*) target_addr)->sin6_port = htons(ipscan->entries[i].target_port);
+                        ipscan->target_ip.ipv6->sin6_port = htons(ipscan->entries[i].target_port);
+                        if(sendto(ipscan->udp_socket, &message, strlen(message), 0, (struct sockaddr*) ipscan->target_ip.ipv6, address_size) == 0) {
+                            perror("sendto");
+                            pthread_mutex_unlock(&(ipscan->mutex));
+                            return ERR_FAILURE;
+                        }
                     }
                     else {
-                        ((struct sockaddr_in*) target_addr)->sin_port = htons(ipscan->entries[i].target_port);
-                    }
-                    if(sendto(ipscan->udp_socket, &message, strlen(message), 0,target_addr, address_size) == 0) {
-                        perror("sendto");
-                        pthread_mutex_unlock(&(ipscan->mutex));
-                        return ERR_FAILURE;
+                        ipscan->target_ip.ipv4->sin_port = htons(ipscan->entries[i].target_port);
+                        if(sendto(ipscan->udp_socket, &message, strlen(message), 0, (struct sockaddr*) ipscan->target_ip.ipv6, address_size) == 0) {
+                            perror("sendto");
+                            pthread_mutex_unlock(&(ipscan->mutex));
+                            return ERR_FAILURE;
+                        }
                     }
                 }
 
@@ -180,15 +178,20 @@ ExitEnum handle_messages_fsm(IPScanPtr ipscan, struct sockaddr* target_addr) {
 
                     if(ipscan->entries[i].protocol == TCP) {
                         if(ipscan->address_family == AF_INET6) {
-                            ((struct sockaddr_in6*) target_addr)->sin6_port = htons(ipscan->entries[i].target_port);
+                            ipscan->target_ip.ipv6->sin6_port = htons(ipscan->entries[i].target_port);
+                            if(sendto(ipscan->tcp_socket, &message, strlen(message), 0, (struct sockaddr*) ipscan->target_ip.ipv6, address_size)) {
+                                perror("sendto");
+                                pthread_mutex_unlock(&(ipscan->mutex));
+                                return ERR_FAILURE;
+                            }
                         }
                         else {
-                            ((struct sockaddr_in*) target_addr)->sin_port = htons(ipscan->entries[i].target_port);
-                        }
-                        if(sendto(ipscan->tcp_socket, &message, strlen(message), 0,target_addr, address_size)) {
-                            perror("sendto");
-                            pthread_mutex_unlock(&(ipscan->mutex));
-                            return ERR_FAILURE;
+                            ipscan->target_ip.ipv4->sin_port = htons(ipscan->entries[i].target_port);
+                            if(sendto(ipscan->tcp_socket, &message, strlen(message), 0, (struct sockaddr*) ipscan->target_ip.ipv6, address_size)) {
+                                perror("sendto");
+                                pthread_mutex_unlock(&(ipscan->mutex));
+                                return ERR_FAILURE;
+                            }
                         }
 
                         if(clock_gettime(CLOCK_MONOTONIC, &(ipscan->entries[i].sent_time))) {
@@ -212,4 +215,122 @@ ExitEnum handle_messages_fsm(IPScanPtr ipscan, struct sockaddr* target_addr) {
         }
     }
     return ERR_SUCCESS;
+}
+
+
+//needs refactoring
+void* receive_messages(void* arg) {
+    IPScanPtr scan = (IPScanPtr) arg;
+    pcap_loop(scan->sniffer, -1, handle_packet, (unsigned char*) scan);
+    return NULL;
+}
+
+
+void handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const unsigned char* packet) {
+    IPScanPtr ipscan = (IPScanPtr) arg;
+    int link_header_type = pcap_datalink(ipscan->sniffer);
+    const unsigned char* ip_header_ptr;
+    // eth 14 bytes
+    if(link_header_type == DLT_EN10MB) {
+        struct ether_header* eth_header = (struct ether_header*) packet;
+        if(ntohs(eth_header->ether_type) != ETHERTYPE_IPV6 && ntohs(eth_header->ether_type) != ETHERTYPE_IP) {
+            return;
+        } 
+        ip_header_ptr = packet + 14; 
+    }
+    // lo 4 bytes
+    else if(link_header_type == DLT_NULL || link_header_type == DLT_LOOP) {
+        ip_header_ptr = packet + 4;
+    }
+    else {
+        return;
+    }
+    // get ip version
+    pthread_mutex_lock(&(ipscan->mutex));
+    if((*ip_header_ptr) >> 4 == 4) {
+        struct iphdr* ip_header = (struct iphdr*) ip_header_ptr;
+        char ip_str[INET_ADDRSTRLEN];
+
+        char src[INET_ADDRSTRLEN];
+        char dst[INET_ADDRSTRLEN];
+
+        if(ip_header->daddr != ipscan->source_ip.ipv4.s_addr || ip_header->saddr != ipscan->target_ip.ipv4->sin_addr.s_addr) {
+            pthread_mutex_unlock(&(ipscan->mutex));
+            return;
+        }
+
+        uint8_t protocol = ip_header->protocol;
+        // handle tcp packet
+        if(protocol == IPPROTO_TCP) {
+            struct tcphdr* tcp_header =(struct tcphdr*) ((unsigned char*)ip_header + ip_header->ihl * 4);
+            if(tcp_header->dest != SOURCE_PORT) {
+                return;
+            }
+
+            ScanEntryPtr entry = find_entry(ipscan->entries, ipscan->entries_count, tcp_header->source, TCP);
+            if(entry == NULL) {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+            if(entry->state != SENT_ONCE && entry->state != SENT_TWICE) {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+            if(tcp_header->rst) {
+                entry->state = CLOSED;
+            }
+            else if(tcp_header->ack && tcp_header->syn) {
+                entry->state = OPEN;
+            }
+            else {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+            ipscan->completed_entries++;
+            pthread_mutex_unlock(&(ipscan->mutex));
+            return;
+        }
+        // handle udp packet (icmp message)
+        else if(protocol == IPPROTO_ICMP){
+            struct icmphdr* icmp_header = (struct icmphdr*) ((unsigned char*)ip_header + ip_header->ihl * 4);
+            if(icmp_header->code != 3 || icmp_header->type != 3) {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+            const unsigned char* orig_ip_header_ptr = (unsigned char*)(icmp_header + 1);
+            struct iphdr* orig_ip_header = (struct iphdr*) orig_ip_header_ptr;
+            if(orig_ip_header->daddr != ipscan->target_ip.ipv4->sin_addr.s_addr || orig_ip_header->saddr != ipscan->source_ip.ipv4.s_addr) {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+
+            struct udphdr* udp_header = (struct udphdr*) ((unsigned char*)orig_ip_header + orig_ip_header->ihl * 4);
+
+
+            ScanEntryPtr entry = find_entry(ipscan->entries, ipscan->entries_count, ntohs(udp_header->uh_dport), UDP);
+
+            if(entry == NULL) {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+
+            if(entry->state != SENT_ONCE) {
+                pthread_mutex_unlock(&(ipscan->mutex));
+                return;
+            }
+            entry->state = CLOSED;
+            pthread_mutex_unlock(&(ipscan->mutex));
+            ipscan->completed_entries++;
+            return;
+        }
+    }
+    else if((*ip_header_ptr) >> 4 == 6){
+        struct ip6_hdr* ip_header = (struct ip6_hdr*) ip_header_ptr;
+    }
+    else {
+        return;
+    }
+
+    pthread_mutex_unlock(&ipscan->mutex);
+    return;
 }

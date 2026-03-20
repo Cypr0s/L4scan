@@ -22,13 +22,10 @@ ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
     if(scanner->parameter_flags & IPV4_FLG) {
         // create ipv4 bind address
         struct sockaddr_in socket_interface = {0};
-        if(inet_pton(AF_INET, scanner->interface_ipv4, &(socket_interface.sin_addr)) == -1) {
-            perror("inet_pton");
-            return ERR_FAILURE;
-        }
-
+        
+        socket_interface.sin_addr = scanner->interface_ipv4;
         socket_interface.sin_family = AF_INET;
-        socket_interface.sin_port = 0;
+        socket_interface.sin_port = SOURCE_PORT;
 
         if(scanner->parameter_flags & TCP_FLG) {
             socks->tcp_ipv4_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
@@ -60,13 +57,10 @@ ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks) {
     if(scanner->parameter_flags & IPV6_FLG) {
 
         struct sockaddr_in6 socket_interface = {0};
-        if(inet_pton(AF_INET6, scanner->interface_ipv4, &(socket_interface.sin6_addr)) == -1){
-            perror("inet_pton");
-            return ERR_FAILURE;
-        }
-
+        
+        socket_interface.sin6_addr = scanner->interface_ipv6;
         socket_interface.sin6_family = AF_INET6;
-        socket_interface.sin6_port = 0;
+        socket_interface.sin6_port = SOURCE_PORT;
 
         if(scanner->parameter_flags & TCP_FLG) {
             socks->tcp_ipv6_socket = socket(AF_INET6, SOCK_RAW, IPPROTO_TCP);

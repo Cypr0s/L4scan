@@ -22,17 +22,24 @@
 #include <pcap.h>       // pcap functions
 #include "ip_scan_struct.h"
 #include "util.h"
+#include <net/ethernet.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <netinet/icmp6.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/ip6.h>
 
 ExitEnum get_addresses_from_hostname(struct addrinfo** hostname_values, ScannerPtr scanner);
 
 ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks);
 
-ExitEnum handle_messages_fsm(IPScanPtr ipscan, struct sockaddr* target_addr);
+ExitEnum handle_messages_fsm(IPScanPtr ipscan);
 
 void* send_messages(void* arg);
 
 void* receive_messages(void* arg);
 
-void* handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const unsigned char* packet);
+void handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const unsigned char* packet);
 
 #endif // HOSTNAME_H

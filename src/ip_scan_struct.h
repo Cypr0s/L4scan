@@ -28,13 +28,12 @@ typedef enum {
 typedef enum {
     TCP,
     UDP
-} PortTypeEnum;
+} ProtocolTypeEnum;
 
 typedef struct {
     unsigned short target_port;
-    unsigned short source_port; // maybe??
     PortStateEnum state;
-    PortTypeEnum protocol;
+    ProtocolTypeEnum protocol;
     struct timespec sent_time;
 } ScanEntry, *ScanEntryPtr;
 
@@ -45,8 +44,15 @@ typedef struct {
 
     int address_family;
 
-    char source_ip[INET6_ADDRSTRLEN];
-    char target_ip[INET6_ADDRSTRLEN];
+    union {
+        struct in_addr ipv4;
+        struct in6_addr ipv6;
+    } source_ip;
+
+    union {
+        struct sockaddr_in* ipv4;
+        struct sockaddr_in6* ipv6;
+    } target_ip;
 
     int tcp_socket;
     int udp_socket;
@@ -60,5 +66,7 @@ ExitEnum ip_scan_ctor(IPScanPtr scan, ScannerPtr scanner);
 void ip_scan_dtor(IPScanPtr ipscan);
 
 void create_scan_entries(ScannerPtr scanner, ScanEntryPtr entries);
+
+ScanEntryPtr find_entry(ScanEntryPtr entries, int entries_size, unsigned short dest_port, ProtocolTypeEnum proto);
 
 #endif

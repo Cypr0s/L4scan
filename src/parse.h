@@ -45,8 +45,8 @@ typedef struct {
     // stores all args
     char parameter_flags;
     char* interface_name;
-    char interface_ipv4[INET6_ADDRSTRLEN];
-    char interface_ipv6[INET6_ADDRSTRLEN];
+    struct in_addr interface_ipv4;
+    struct in6_addr interface_ipv6;
 
     char* hostname;
     unsigned int timeout_time;

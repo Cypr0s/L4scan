@@ -56,3 +56,12 @@ void create_scan_entries(ScannerPtr scanner, ScanEntryPtr entries) {
         }
     }
 }
+
+ScanEntryPtr find_entry(ScanEntryPtr entries, int entries_size, unsigned short dest_port, ProtocolTypeEnum proto) {
+    for(int i = 0; i < entries_size; i++) {
+        if(entries[i].protocol == proto && entries[i].target_port == dest_port){
+            return &entries[i];
+        }
+    }
+    return NULL;
+}

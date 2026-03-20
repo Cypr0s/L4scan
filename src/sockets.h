@@ -11,6 +11,8 @@
 #ifndef SOCKETS_H
 #define SOCKETS_H
 
+#define SOURCE_PORT 53653 // random number 
+
 #include "error.h"  // ExitEnum, errno
 #include "parse.h"  // Scanner struct
 #include <sys/socket.h> // sockets

@@ -6,7 +6,7 @@ void print_formated(char* ip_adress, unsigned short port_number, char* protocol,
 }
 
 
-ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, struct addrinfo* address) {
+ExitEnum set_filter(IPScanPtr ipscan, ScannerPtr scanner, struct addrinfo* address) {
     char ip_string[INET6_ADDRSTRLEN];
     char filter[128];
 
@@ -25,15 +25,12 @@ ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, s
         else {
             snprintf(filter, sizeof(filter), "src host %s and tcp", ip_string);
         }
-
-        ipscan->tcp_socket = socks->tcp_ipv4_socket;
-        ipscan->udp_socket = socks->udp_ipv4_socket;
-        strcpy(ipscan->source_ip, scanner->interface_ipv4);
-        ipscan->address_family = AF_INET;
     }
-    else if (address->ai_family == AF_INET6) {
-
-        inet_ntop(AF_INET6, &((struct sockaddr_in6*)address->ai_addr)->sin6_addr, ip_string, sizeof(ip_string));
+    else {
+        if(inet_ntop(AF_INET6, &((struct sockaddr_in6*)address->ai_addr)->sin6_addr, ip_string, sizeof(ip_string))) {
+            perror("inet_ntop");
+            return ERR_FAILURE;
+        }
 
         if(scanner->parameter_flags & TCP_FLG && scanner->parameter_flags & UDP_FLG) {
             snprintf(filter, sizeof(filter), "src host %s and (icmp6 or tcp)", ip_string);
@@ -44,16 +41,8 @@ ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, s
         else {
             snprintf(filter, sizeof(filter), "src host %s and tcp", ip_string);
         }
-        ipscan->tcp_socket = socks->tcp_ipv6_socket;
-        ipscan->udp_socket = socks->udp_ipv6_socket;
-        strcpy(ipscan->source_ip, scanner->interface_ipv6);
-        ipscan->address_family = AF_INET6;
     }
-    else {
-        fprintf(stderr, "Invalid hostname family name\n");
-        return ERR_HOSTNAME;
-    }
-    strcpy(ipscan->target_ip, ip_string);
+
     // set filter
     struct bpf_program fp;
     if(pcap_compile(ipscan->sniffer, &fp, filter, 0, PCAP_NETMASK_UNKNOWN) == -1) {
@@ -68,19 +57,58 @@ ExitEnum set_ip_filter(IPScanPtr ipscan, ScannerPtr scanner, SocketsPtr socks, s
     return ERR_SUCCESS;
 }
 
-void print_entry_states(IPScanPtr ipscan) {
+
+void set_sockets(IPScanPtr ipscan, SocketsPtr socks) {
+    if(ipscan->address_family == AF_INET) {
+        ipscan->tcp_socket = socks->tcp_ipv4_socket;
+        ipscan->udp_socket = socks->udp_ipv4_socket;
+    }
+    else {
+        ipscan->tcp_socket = socks->tcp_ipv6_socket;
+        ipscan->udp_socket = socks->udp_ipv6_socket;
+    }
+}
+
+
+void set_address(IPScanPtr ipscan, struct addrinfo* address, ScannerPtr scanner) {
+    ipscan->address_family = address->ai_family;
+    if(ipscan->address_family == AF_INET) {
+        ipscan->target_ip.ipv4 = (struct sockaddr_in*) address->ai_addr;
+        ipscan->source_ip.ipv4 = scanner->interface_ipv4;
+    }
+    else {
+        ipscan->target_ip.ipv6 = (struct sockaddr_in6*) address->ai_addr;
+        ipscan->source_ip.ipv6 = scanner->interface_ipv6;
+    }
+}
+
+
+ExitEnum print_entry_states(IPScanPtr ipscan) {
     // print port states
+    char target_ip[46];
+    if(ipscan->address_family == AF_INET) {
+        if(inet_ntop(ipscan->address_family, &(ipscan->target_ip.ipv4), target_ip, sizeof(target_ip)) == NULL) {
+            perror("inet_ntop");
+            return ERR_FAILURE;
+        }
+    }
+    else {
+        if(inet_ntop(ipscan->address_family, &(ipscan->target_ip.ipv6), target_ip, sizeof(target_ip)) == NULL) {
+            perror("inet_ntop");
+            return ERR_FAILURE;
+        }
+    }
     for(int i = 0; i < ipscan->entries_count; i++) {
         char* protocol = ipscan->entries[i].protocol == TCP ? "tcp" : "udp";
         switch(ipscan->entries[i].state) {
             case OPEN:
-                print_formated(ipscan->target_ip, ipscan->entries[i].target_port, protocol, "open\n");
+                print_formated(target_ip, ipscan->entries[i].target_port, protocol, "open\n");
                 break;
             case FILTERED:
-                print_formated(ipscan->target_ip, ipscan->entries[i].target_port, protocol, "filtered\n");
+                print_formated(target_ip, ipscan->entries[i].target_port, protocol, "filtered\n");
                 break;
             case CLOSED:
-                print_formated(ipscan->target_ip, ipscan->entries[i].target_port, protocol, "closed\n");
+                print_formated(target_ip, ipscan->entries[i].target_port, protocol, "closed\n");
                 break;
             default:
                 break;
@@ -88,6 +116,7 @@ void print_entry_states(IPScanPtr ipscan) {
         ipscan->entries[i].state = WAITING;
         ipscan->entries[i].sent_time.tv_nsec = 0;
     }
+    return ERR_SUCCESS;
 }
 
 void create_tcp_packet() {
