@@ -2,9 +2,9 @@
  * @file    interface.c
  * @author  Kristian Luptak <xluptak00>
  * @date    creation:   12.3.2026
- *          updated:    15.3.2026
+ *          updated:    22.3.2026
  * @brief   File handles anything related to interface
- *          argument, checking if provided interface exists or
+ *          argument, storing interface structs or
  *          printing all computer interfaces
  */
 
@@ -14,12 +14,9 @@
 
 /** 
  * @def     print_interfaces
- * @brief   Based on input either print all interfaces if input is NULL, 
- *          otherwise check if provided input exists
- * @param   input - name of the interface that needs to be check or NULL
- * @return  ERR_INVALID_ARGUMENT(2) if provided interface doesnt exist
- *          ERR_SUCCESS(0) if input is null and interfaces were printed or 
- *          provided interface exists
+ * @brief   prints all avaiable interfaces
+ * @return  ERR_SUCCESS(0) no errors
+ *          ERR_GETIFADDRS(3) getifaddrs error
  */
 ExitEnum print_interfaces(void) {
     struct ifaddrs* interfaces;
@@ -30,7 +27,7 @@ ExitEnum print_interfaces(void) {
 
     // loop through all interfaces
     for(struct ifaddrs* ptr = interfaces; ptr != NULL; ptr = ptr->ifa_next){
-        if(ptr->ifa_name == NULL || ptr->ifa_addr == NULL) { // show only active ones
+        if(ptr->ifa_name == NULL || ptr->ifa_addr == NULL ) { // show only active ones
             continue;
         }
 
@@ -44,44 +41,92 @@ ExitEnum print_interfaces(void) {
 } // print_interfaces
 
 
+/** @def    get_interfaces
+ *  @brief  resolves interfaces from provided interface name and stores 
+ *          2 ipv4/6 structs inside scanner (ipv6 global interface)
+ *  @param  scanner - stores interface name, and will store ipv4 and/or ipv6 interface
+ *  @return ERR_SUCCESS(0) when no errors happen
+ *          ERR_GETIFADDRS(3) getifaddrs error
+ *          ERR_NO_INTERFACE(4) when address needs ipv4/ipv6 interface and it was not found
+ *                              or no interface at all was found
+ */
 ExitEnum get_interfaces(ScannerPtr scanner) {
     struct ifaddrs* interfaces;
-    struct in6_addr zero6 = IN6ADDR_ANY_INIT;
 
+    // resolve interfaces for provided interfae
     if(getifaddrs(&interfaces) == -1) {
         perror("getifaddrs");
         return ERR_GETIFADDRS;
     }
 
+    struct in6_addr check = {0}; // util to check if scaner->ipv6 i empty
+
+    // loop through interfaces
     for(struct ifaddrs* ptr = interfaces; ptr != NULL; ptr = ptr->ifa_next){
         if(ptr->ifa_name == NULL || ptr->ifa_addr == NULL) { // show only active ones
             continue;
         }
-        if(strcmp(ptr->ifa_name, scanner->interface_name)) {
+        if(strcmp(ptr->ifa_name, scanner->interface_name)) { // only the ones with the same name
             continue;
         }
-        // print only once each
-        if(ptr->ifa_addr->sa_family == AF_INET && scanner->interface_ipv4.s_addr == 0) {
+
+        // ipv4
+        if(ptr->ifa_addr->sa_family == AF_INET) {
+            // check if it was already set
+            if(scanner->interface_ipv4.s_addr != 0) {
+                continue;
+            }
             scanner->interface_ipv4 =  ((struct sockaddr_in*)ptr->ifa_addr)->sin_addr;
         }
 
-        if(ptr->ifa_addr->sa_family == AF_INET6 && memcmp(&scanner->interface_ipv6, &zero6, sizeof(struct in6_addr)) == 0) {
+        // ipv6
+        if(ptr->ifa_addr->sa_family == AF_INET6) {
+            // check if it was already set
+            if(memcmp(&scanner->interface_ipv6, &check, sizeof(struct in6_addr)) != 0) {
+                continue;
+            }
+
+            // check for loopback and link local
+            struct sockaddr_in6* address = (struct sockaddr_in6*) ptr->ifa_addr;
+            if(IN6_IS_ADDR_LINKLOCAL(&address->sin6_addr)) {
+                continue;
+            }
+            if (IN6_IS_ADDR_LOOPBACK(&address->sin6_addr)) {
+                continue;
+            }
+            // global one was found, set it
             scanner->interface_ipv6 = ((struct sockaddr_in6*)ptr->ifa_addr)->sin6_addr;
-        }  
-    }
+        }
+    } // for
+
+    // free interfaces
     freeifaddrs(interfaces);
-    if(memcmp(&scanner->interface_ipv6, &zero6, sizeof(struct in6_addr)) == 0 && scanner->interface_ipv4.s_addr == 0) {
+
+    // both interface are not set (err)
+    if(memcmp(  &scanner->interface_ipv6, &check, sizeof(struct in6_addr)) == 0 && 
+                scanner->interface_ipv4.s_addr == 0) 
+    {
         fprintf(stderr, "No valid interfaces found to name `%s`\n", scanner->interface_name);
         return ERR_NO_INTERFACE;
     }
 
+    // ipv4 address was found but no interface
     if(scanner->parameter_flags & IPV4_FLG && scanner->interface_ipv4.s_addr == 0) {
-        fprintf(stderr, "Hostname has ipv4 required to check but `%s` has no ipv4 interface\n", scanner->interface_name);
+        fprintf(stderr, 
+                "Hostname has ipv4 required to check but `%s` has no ipv4 interface\n", 
+                scanner->interface_name
+            );
         return ERR_NO_INTERFACE;
     }
 
-    if(scanner->parameter_flags & IPV6_FLG && memcmp(&scanner->interface_ipv6, &zero6, sizeof(struct in6_addr)) == 0) {
-        fprintf(stderr, "Hostname has ipv6 required to check but `%s` has no ipv4 interface\n", scanner->interface_name);
+    // ipv6 address was found but no interface
+    if( scanner->parameter_flags & IPV6_FLG && 
+        memcmp(&scanner->interface_ipv6, &check, sizeof(struct in6_addr)) == 0) 
+    {
+        fprintf(stderr, 
+                "Hostname has ipv6 required to check but `%s` has no ipv4 interface\n", 
+                scanner->interface_name
+            );
         return ERR_NO_INTERFACE; 
     }
 

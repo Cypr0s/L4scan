@@ -193,7 +193,6 @@ ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner) {
 
 
     // required arguments checking
-
     if(!(scanner->parameter_flags & HOSTNAME_FLG)) {
         fprintf(stderr, "No hostname provided, Hostname is required\n");
         return ERR_INVALID_ARGUMENT;

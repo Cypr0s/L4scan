@@ -5,9 +5,11 @@
 #include "error.h"      // ExitEnum
 #include "parse.h"      // scanner struct
 #include <netdb.h>      // addrinfo struct
-#include <pcap.h>
-#include <pthread.h>
+#include <pcap.h>       // setfilter, compile filter
+#include <pthread.h>    // mutex
+#include "sockets.h"    // sockets
 
+// macro to create entries
 #define CREATE_ENTRY(entries, pos, proto, port_num) do {    \
     entries[(pos)].target_port = (port_num);                       \
     entries[(pos)].protocol = (proto);                      \
@@ -15,7 +17,7 @@
     entries[(pos)].sent_time = (struct timespec) {0};       \
 } while(0)
 
-
+// enum used in entries and fsm 
 typedef enum {
     WAITING,
     SENT_ONCE,
@@ -42,7 +44,7 @@ typedef struct {
     int completed_entries;
     int entries_count;
 
-    int address_family;
+    int address_family; // AF_INET / AF_INET6
 
     union {
         struct in_addr ipv4;
@@ -56,6 +58,7 @@ typedef struct {
 
     int tcp_socket;
     int udp_socket;
+
     int timeout_time;
     pthread_mutex_t mutex;
     pcap_t* sniffer;
@@ -67,6 +70,13 @@ void ip_scan_dtor(IPScanPtr ipscan);
 
 void create_scan_entries(ScannerPtr scanner, ScanEntryPtr entries);
 
-ScanEntryPtr find_entry(ScanEntryPtr entries, int entries_size, unsigned short dest_port, ProtocolTypeEnum proto);
+ScanEntryPtr find_entry(ScanEntryPtr entries, int entries_size, 
+                        unsigned short dest_port, ProtocolTypeEnum proto);
+
+ExitEnum set_filter(IPScanPtr ipscan, ScannerPtr scanner, struct addrinfo* address);
+
+void set_sockets(IPScanPtr ipscan, SocketsPtr socks);
+
+void set_address(IPScanPtr ipscan, struct addrinfo* address, ScannerPtr scanner);
 
 #endif

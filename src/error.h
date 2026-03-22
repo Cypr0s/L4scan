@@ -1,3 +1,11 @@
+/** -------------- IPK 1. project - L4 Scanner -----------------
+ * @headerfile  error.h
+ * @author      Kristian Luptak <xluptak00>
+ * @date        creation:   11.3.2026
+ *              updated:    22.3.2026
+ * @brief       contains error enum for all returning statuses  
+ */
+
 #ifndef ERROR_H
 #define ERROR_H
 

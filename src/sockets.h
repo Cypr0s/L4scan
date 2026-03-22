@@ -1,5 +1,5 @@
 /** -------------- IPK 1. project - L4 Scanner -----------------
- * @headerfile  sockets.c
+ * @headerfile  sockets.h
  * @author      Kristian Luptak <xluptak00>
  * @date        creation:   15.3.2026
  *              updated:    15.3.2026
@@ -16,9 +16,7 @@
 #include "error.h"  // ExitEnum, errno
 #include "parse.h"  // Scanner struct
 #include <sys/socket.h> // sockets
-#include <arpa/inet.h>
-#include <unistd.h>
-
+#include <unistd.h> // close
 
 // closes socket if it has a viable file_desctriptor
 #define CLOSE_SOCKET(socket) do {   \
@@ -27,6 +25,7 @@
     }                               \
 } while(0)
 
+// sockets struct
 typedef struct {
     int tcp_ipv4_socket;
     int udp_ipv4_socket;
@@ -34,11 +33,11 @@ typedef struct {
     int udp_ipv6_socket;
 } Sockets, *SocketsPtr;
 
+ExitEnum create_sockets(SocketsPtr socks, ScannerPtr scanner);
 
+ExitEnum bind_sockets(SocketsPtr socks, ScannerPtr scanner);
 
-ExitEnum create_sockets(ScannerPtr scanner, SocketsPtr socks);
-
-
+void init_sockets_struct(SocketsPtr socks);
 
 void destroy_sockets(SocketsPtr socks);
 

@@ -6,7 +6,7 @@
 
 #compiling
 CC=gcc
-CFLAGS= -std=gnu17 -pedantic -Wall -Wextra -g
+CFLAGS= -std=gnu17 -pedantic -Wall -Wextra
 FILE_LOC= src/
 LIBS=-pthread -lpcap
 
@@ -23,7 +23,6 @@ OUT= ipk-L4-scan
 DEVSHELL=c
 
 ZIP_NAME=xluptak00
-
 
 
 .PHONY: test all clean NixDevShellName zip

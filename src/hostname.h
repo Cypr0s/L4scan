@@ -10,29 +10,22 @@
 #ifndef HOSTNAME_H
 #define HOSTNAME_H
 
+#include <signal.h> // sig_atomic_t
 #include <netdb.h>      // getaddrinfo
 #include <stdlib.h>     // NULL
 #include <stdio.h>      // fprintf, stderr
 #include "error.h"      // errno, ExitEnum
 #include "parse.h"      // Scanner struct
 #include "sockets.h"    // Sockets struct
-#include <stdbool.h>    // bool type
-#include <pthread.h>    // threads
-#include <ifaddrs.h>    // ifaddrs struct
 #include <pcap.h>       // pcap functions
-#include "ip_scan_struct.h"
-#include "util.h"
-#include <net/ethernet.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <netinet/icmp6.h>
-#include <netinet/ip_icmp.h>
-#include <netinet/ip6.h>
+#include "ip_scan_struct.h" // ipscan struct
+#include "util.h"       // util functions
+#include <net/ethernet.h>   // ethernet header check
+extern volatile sig_atomic_t status;
 
 ExitEnum get_addresses_from_hostname(struct addrinfo** hostname_values, ScannerPtr scanner);
 
-ExitEnum scan_ipaddresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks);
+ExitEnum scan_ip_addresses(ScannerPtr scanner, struct addrinfo* addresses, SocketsPtr socks);
 
 ExitEnum handle_messages_fsm(IPScanPtr ipscan);
 

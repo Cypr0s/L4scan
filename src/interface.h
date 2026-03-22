@@ -15,10 +15,6 @@
 #include "parse.h"      // Scanner structure
 #include <ifaddrs.h>    // getifaddr, freeifaddr
 #include <stdio.h>      // prints, stdio
-#include <string.h>     // strcmp
-#include <arpa/inet.h>
-
-ExitEnum print_interfaces(void);
 
 ExitEnum get_interfaces(ScannerPtr scanner);
 

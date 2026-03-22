@@ -17,7 +17,7 @@
 #include <stdio.h>  // prints, stdio/err
 #include <string.h> // strcmp
 #include <stdlib.h> // strtol, NULL
-#include <netdb.h>  // INET6_ADDRSTRLEN
+#include <netdb.h>  // in_addr, in6_addr
 
 // flags for parameter presence used in Scanner struct (Scanner struct has one char bit flag)
 #define HOSTNAME_FLG (1 << 0) 
@@ -42,9 +42,9 @@
 
 // Scanner struct which holds all important parsed data from input
 typedef struct {
-    // stores all args
     char parameter_flags;
     char* interface_name;
+
     struct in_addr interface_ipv4;
     struct in6_addr interface_ipv6;
 
@@ -58,33 +58,8 @@ typedef struct {
     unsigned short tcp_count;
 } Scanner, *ScannerPtr;
 
-
-/**
- * @def     parse_arguments
- * @brief   Parses input arguments, loads information into Scanner struct,
- *          returns ERR_INVALID_ARUMENT when invalid argument is inputted.
- * @param   argc - count ofinput arguments passed from main()
- * @param   argv - input arguments passed from main()
- * @param   scanner - pinter to Scanner struct where important parsed information is stored
- *                    (eg. interface name, hostname name, bitmap of ports)
- * @return  ERR_SUCCESS(0) if parsing was successful or help argument was provided
- *          ERR_INVALID_ARGUMENT(2) if there was either invalid Argument, invalid argument Value,
- *          Multiple uses of any argument or no Required argument was 
- *          provided(hostname, interface atleast one of TCP/UDP ports)
- */
 ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner);
 
-
-/**
- * @def     convert_str_to_nums
- * @brief   converts range of ports string(eg. 80-443 or 67, 68, 69 or 65536) 
- *          into bitmap which is stored in arr parameter
- * @param   input - string which is converted to bitmap
- * @param   arr - bitmap (longs) from struct Scanner where result bits are set to 1
- * @return  ERR_INVALID_ARGUMENT(2) upon strtol errors or invalid input
- *          (eg. number is out of range for ports or invalid characters).
- *          ERR_SUCCESS(0) if no errors happened
- */
 ExitEnum convert_str_to_nums(const char* input, unsigned long* arr, unsigned short* count);
 
 #endif // PARSE_H
