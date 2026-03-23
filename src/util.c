@@ -64,6 +64,7 @@ ExitEnum print_entry_states(IPScanPtr ipscan) {
         ipscan->entries[i].state = WAITING;
         ipscan->entries[i].sent_time.tv_nsec = 0;
     }
+    ipscan->completed_entries = 0;
     return ERR_SUCCESS;
 } // print_entry_states
 
@@ -109,6 +110,7 @@ void create_ipv4_packet(IPScanPtr ipscan, unsigned char* buffer,
  * @return  nothing 
  */
 void create_tcp_header(unsigned char* buffer, unsigned short dest_port) {
+    memset(buffer, 0, sizeof(struct tcphdr));
     struct tcphdr* tcp_header = (struct tcphdr*) buffer;
     tcp_header->syn = 1; // sending SYN TCP packets
     tcp_header->source = htons(SOURCE_PORT);    // source port
@@ -267,10 +269,7 @@ ExitEnum send_entry(unsigned char* message, unsigned short message_size, int soc
  */
 void handle_ipv6_header(unsigned char* char_header, IPScanPtr ipscan) {
     struct ip6_hdr* ip_header = (struct ip6_hdr*) char_header;
-    // compare their dst ==  our src
-    if(memcmp(&ip_header->ip6_dst, &ipscan->source_ip.ipv6, sizeof(struct in6_addr)) != 0) {
-        return;
-    }
+
     // compare  their src == our dst
     if(memcmp(&ip_header->ip6_src, 
                 &ipscan->target_ip.ipv6->sin6_addr, sizeof(struct in6_addr)) != 0) 
@@ -351,10 +350,7 @@ void handle_icmpv6_header(unsigned char* char_header, IPScanPtr ipscan) {
     {
         return;
     } 
-    // check our src == their src (orig header)
-    if(memcmp(&orig_ipv6_header->ip6_src, &ipscan->source_ip.ipv6, sizeof(struct in6_addr)) != 0) {
-        return;
-    }
+
     // get ORIG udp
     struct udphdr* udp_header = (struct udphdr*) (orig_ipv6_header_ptr + sizeof(struct ip6_hdr));
 
@@ -385,10 +381,8 @@ void handle_icmpv6_header(unsigned char* char_header, IPScanPtr ipscan) {
  */
 void handle_ipv4_header(unsigned char* char_header, IPScanPtr ipscan) {
     struct iphdr* ip_header = (struct iphdr*) char_header;
-    // check src = dst , dst = src
-    if(ip_header->daddr != ipscan->source_ip.ipv4.s_addr || 
-        ip_header->saddr != ipscan->target_ip.ipv4->sin_addr.s_addr) 
-    {
+    // check our dst == their src
+    if(ip_header->saddr != ipscan->target_ip.ipv4->sin_addr.s_addr) {
         return;
     }
 

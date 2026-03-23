@@ -195,15 +195,20 @@ ExitEnum handle_messages_fsm(IPScanPtr ipscan) {
                     // udp message
                     unsigned char message[] = "sup udp";
                     message_size = sizeof(message);
-    
+                    
+                    // use copies
+                    struct sockaddr_in addr4_copy;
+                    struct sockaddr_in6 addr6_copy;
                     // set target port and target
                     if(ipscan->address_family == AF_INET) {
-                        ipscan->target_ip.ipv4->sin_port = htons(ipscan->entries[i].target_port);
-                        target =(struct sockaddr*) ipscan->target_ip.ipv4;
+                        addr4_copy = *ipscan->target_ip.ipv4;
+                        addr4_copy.sin_port = htons(ipscan->entries[i].target_port);
+                        target = (struct sockaddr*) &addr4_copy;
                     }
                     else{
-                        ipscan->target_ip.ipv6->sin6_port = htons(ipscan->entries[i].target_port);
-                        target =(struct sockaddr*) ipscan->target_ip.ipv6;
+                        addr6_copy = *ipscan->target_ip.ipv6;
+                        addr6_copy.sin6_port = htons(ipscan->entries[i].target_port);
+                        target = (struct sockaddr*) &addr6_copy;
                     }
                     // send entry
                     err = send_entry(message, message_size, ipscan->udp_socket, 
@@ -268,7 +273,7 @@ ExitEnum handle_messages_fsm(IPScanPtr ipscan) {
                 break;
             } // case SENT_ONCE
 
-            case SENT_TWICE:
+            case SENT_TWICE: {
                 pthread_mutex_lock(&(ipscan->mutex));
                 // check timeout
                 long time_sent;
@@ -284,7 +289,8 @@ ExitEnum handle_messages_fsm(IPScanPtr ipscan) {
                 }
                 pthread_mutex_unlock(&(ipscan->mutex));
                 // tcp filtered
-            break;
+                break;
+            }
         } // switch
     } // for loop through entries
     return ERR_SUCCESS;
@@ -311,7 +317,7 @@ void* receive_messages(void* arg) {
  * @param   packet packet data
  */
 void handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const unsigned char* packet) {
-    header = (void*) header;
+    (void) header;
     IPScanPtr ipscan = (IPScanPtr) arg;
     int link_header_type = pcap_datalink(ipscan->sniffer);
     const unsigned char* ip_header_ptr;

@@ -12,7 +12,15 @@
 #include "parse.h"
 
 
-const char* help_message = "SOMEBODY HELP ME PLEASE!\n";
+const char* help_message =  " USAGE: ./ipk-L4-scan -i INTERFACE [-u PORTS] [-t PORTS] HOST [-w TIMEOUT] [-h | --help] where\n\n"
+                            " REQUIRED PARAMETERS: -i \n"
+                            "                      HOSTNAME\n"
+                            "                      atleast one port -u or -t\n\n"
+                            "-i INTERFACE   must be a valid interface\n"
+                            " HOSTNAME      must be a valid hostname\n"
+                            "-u PORTS       are udp scanned ports\n"
+                            "-t PORTS       are tcp scanner ports\n"
+                            "-w TIMEOUST    is timeout in milisecons\n";
 
 /**
  * @def     parse_arguments

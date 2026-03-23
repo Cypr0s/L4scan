@@ -18,4 +18,6 @@
 
 ExitEnum get_interfaces(ScannerPtr scanner);
 
+ExitEnum print_interfaces(void);
+
 #endif // INTERFACE_H
