@@ -193,7 +193,7 @@ ExitEnum handle_messages_fsm(IPScanPtr ipscan) {
                 // udp
                 if(ipscan->entries[i].protocol == UDP) {
                     // udp message
-                    unsigned char message[] = "sup udp";
+                    unsigned char message[] = "sup udp\n";
                     message_size = sizeof(message);
                     
                     // use copies

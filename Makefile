@@ -24,6 +24,8 @@ DEVSHELL=c
 
 ZIP_NAME=xluptak00
 
+TEST_FILE=test.sh
+
 
 .PHONY: test all clean NixDevShellName zip
 
@@ -43,10 +45,12 @@ NixDevShellName:
 
 # run automatic tests
 test: all
+	chmod +x $(TEST_FILE)
+	./$(TEST_FILE)
 
 # zip
 zip:
-	zip -r $(ZIP_NAME).zip Makefile LICENSE CHANGELOG.md README.md tests src -x *.o
+	zip -r $(ZIP_NAME).zip Makefile LICENSE CHANGELOG.md README.md test.sh src -x *.o
 
 # clean
 clean:

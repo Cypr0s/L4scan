@@ -132,6 +132,33 @@ Upon any error program prints error message to `stderr` and exits with a corresp
 
 ## Testing
 
+### Testing environment
+All tests were performed in Linux environment:
+  - **OS**: `Ubuntu 24.04.4 LTS`
+  - **GCC**: `14.3.0`
+  - **GNU**: `Make 4.4.1`
+  - **Tested interfaces**: `lo`, `wlo1` 
+  - **libpcap**: `1.10.4`
+  - **External tools**:
+    - nmap: `7.94` - reference output
+    - wireshark: `4.2.2` - packet tracking
+>`SUDO` priviliges are required for testing the application
+
+### Automated tests
+Automated tests are run using:
+```bash
+  make test   #sudo privileges required
+```
+Automated tests test:
+  - Correct argument parsing
+  - Simple TCP scanning tests on localhost
+  - Simple UDP scanning tests on localhost
+  - Correct port ranges for ports
+  - -i and -help flags
+
+### Manual tests
+
+
 
 ## *Known* Limitations
 
