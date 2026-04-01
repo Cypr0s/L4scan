@@ -50,7 +50,7 @@ test: all
 
 # zip
 zip:
-	zip -r $(ZIP_NAME).zip Makefile LICENSE CHANGELOG.md README.md test.sh src -x *.o images
+	zip -r $(ZIP_NAME).zip Makefile LICENSE CHANGELOG.md README.md test.sh src images -x *.o
 
 # clean
 clean:
