@@ -49,6 +49,17 @@ ExitEnum get_addresses_from_hostname(struct addrinfo** hostname_values, ScannerP
             scanner->parameter_flags |= IPV4_FLG;
         }
         else if(ptr->ai_family == AF_INET6) {
+            struct sockaddr_in6* addr6 = (struct sockaddr_in6*) ptr->ai_addr;
+            if(IN6_IS_ADDR_LINKLOCAL(&addr6->sin6_addr)) {
+                scanner->address_flag = ADDR_LINKLOCAL;
+            }
+            else if(IN6_IS_ADDR_LOOPBACK(&addr6->sin6_addr)) {
+                scanner->address_flag = ADDR_LOOPBACK;
+            }
+            else {
+                scanner->address_flag = ADDR_GLOBAL;
+            }
+
             scanner->parameter_flags |= IPV6_FLG;
         }
     }
@@ -333,6 +344,10 @@ void handle_packet(unsigned char* arg, const struct pcap_pkthdr* header, const u
     // lo 4 bytes
     else if(link_header_type == DLT_NULL || link_header_type == DLT_LOOP) { // loopback // dlt
         ip_header_ptr = packet + 4;
+    }
+    // vpn
+    else if(link_header_type == DLT_RAW) {
+        ip_header_ptr = packet;
     }
     else {
         return;

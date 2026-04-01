@@ -31,10 +31,18 @@ ExitEnum print_interfaces(void) {
             continue;
         }
 
-        // print only once each
-        if(ptr->ifa_addr->sa_family == AF_PACKET) {
+        int printed = 0;
+        for (struct ifaddrs* temp = interfaces; temp != ptr; temp = temp->ifa_next) {
+            if (temp->ifa_name != NULL && temp->ifa_addr != NULL &&
+                strcmp(temp->ifa_name, ptr->ifa_name) == 0) {
+                printed = 1;
+                break;
+            }
+        }
+
+        if (!printed) {
             fprintf(stdout, "%s\n", ptr->ifa_name);
-        }  
+        }
     }
     freeifaddrs(interfaces);
     return ERR_SUCCESS;
@@ -88,14 +96,20 @@ ExitEnum get_interfaces(ScannerPtr scanner) {
 
             // check for loopback and link local
             struct sockaddr_in6* address = (struct sockaddr_in6*) ptr->ifa_addr;
-            if(IN6_IS_ADDR_LINKLOCAL(&address->sin6_addr)) {
-                continue;
+            if(scanner->address_flag == ADDR_LOOPBACK && IN6_IS_ADDR_LOOPBACK(&address->sin6_addr)) {
+                scanner->interface_ipv6 = ((struct sockaddr_in6*)ptr->ifa_addr)->sin6_addr;
             }
-            if (IN6_IS_ADDR_LOOPBACK(&address->sin6_addr)) {
-                continue;
+            else if (scanner->address_flag == ADDR_LINKLOCAL && 
+                    IN6_IS_ADDR_LINKLOCAL(&address->sin6_addr)) 
+            {
+                scanner->interface_ipv6 = ((struct sockaddr_in6*)ptr->ifa_addr)->sin6_addr;
             }
-            // global one was found, set it
-            scanner->interface_ipv6 = ((struct sockaddr_in6*)ptr->ifa_addr)->sin6_addr;
+            else if(scanner->address_flag == ADDR_GLOBAL && 
+                    !IN6_IS_ADDR_LINKLOCAL(&address->sin6_addr) && 
+                    !IN6_IS_ADDR_LOOPBACK(&address->sin6_addr)) 
+            {
+                scanner->interface_ipv6 = address->sin6_addr;
+            }
         }
     } // for
 

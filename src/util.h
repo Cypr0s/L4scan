@@ -72,4 +72,5 @@ void handle_ipv4_header(unsigned char* char_header, IPScanPtr ipscan);
 
 void handle_icmp_header(unsigned char* char_header, IPScanPtr ipscan);
 
+
 #endif // UTIL_H

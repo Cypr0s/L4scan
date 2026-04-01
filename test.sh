@@ -293,10 +293,76 @@ nc -l -p 1 -k &
 nc -l -p 65535 -k &
 sleep 0.1
 OUT=$("$SCANNER" -i "$INTERFACE" -t 1,65535 localhost)
-if echo "$OUT" | grep -q "1 tcp open" && echo "$OUT" grep -q "65535 tcp open"; then
+if echo "$OUT" | grep -q "1 tcp open" && echo "$OUT" | grep -q "65535 tcp open"; then
     pass "26. tcp edge case ports"
 else
     fail "26. tcp edge case ports"
 fi
-kill $(lsof -t -i:13350)
+kill $(lsof -t -i:1)
+kill $(lsof -t -i:65535)
+sleep 0.1
+
+
+# 27 ipv6 tcp open
+nc -6 -l -p 13420 -k &
+sleep 0.1
+OUT=$("$SCANNER" -i "$INTERFACE" -t 13420 ::1)
+if echo "$OUT" | grep -q "13420 tcp open"; then
+    pass "27. ipv6 tcp open"
+else
+    fail "27. ipv6 tcp open"
+fi
+kill $(lsof -t -iTCP:13420)
+sleep 0.1
+
+# 28 ipv6 tcp closed
+OUT=$("$SCANNER" -i "$INTERFACE" -t 13421 ::1)
+if echo "$OUT" | grep -q "13421 tcp closed"; then
+    pass "28. ipv6 tcp closed"
+else
+    fail "28. ipv6 tcp closed"
+fi
+
+# 29 ipv6 udp open
+nc -6 -u -l -p 13422 >/dev/null &
+sleep 0.1
+OUT=$("$SCANNER" -i "$INTERFACE" -u 13422 ::1)
+if echo "$OUT" | grep -q "13422 udp open"; then
+    pass "29. ipv6 udp open"
+else
+    fail "29. ipv6 udp open"
+fi
+kill $(lsof -t -iUDP:13422)
+sleep 0.1
+
+# 30 ipv6 udp closed
+OUT=$("$SCANNER" -i "$INTERFACE" -u 13423 ::1)
+if echo "$OUT" | grep -q "13423 udp closed"; then
+    pass "30. ipv6 udp closed"
+else
+    fail "30. ipv6 udp closed"
+fi
+
+# 31 ipv6 tcp multiple ports mixed
+nc -6 -l -p 13424 -k &
+sleep 0.1
+OUT=$("$SCANNER" -i "$INTERFACE" -t 13424,13425 ::1)
+if echo "$OUT" | grep -q "13424 tcp open" && echo "$OUT" | grep -q "13425 tcp closed"; then
+    pass "31. ipv6 tcp multiple ports mixed"
+else
+    fail "31. ipv6 tcp multiple ports mixed"
+fi
+kill $(lsof -t -iTCP:13424)
+sleep 0.1
+
+# 32 ipv6 udp multiple ports mixed
+nc -6 -u -l -p 13426 >/dev/null &
+sleep 0.1
+OUT=$("$SCANNER" -i "$INTERFACE" -u 13426,13427 ::1)
+if echo "$OUT" | grep -q "13426 udp open" && echo "$OUT" | grep -q "13427 udp closed"; then
+    pass "32. ipv6 udp multiple ports mixed"
+else
+    fail "32. ipv6 udp multiple ports mixed"
+fi
+kill $(lsof -t -iUDP:13426)
 sleep 0.1

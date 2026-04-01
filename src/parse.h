@@ -40,6 +40,12 @@
             1UL << ((unsigned long) (value)) % LONG_BIT);   \
 } while(0)
 
+typedef enum {
+    ADDR_LOOPBACK,
+    ADDR_GLOBAL,
+    ADDR_LINKLOCAL
+}AddrFlg;
+
 // Scanner struct which holds all important parsed data from input
 typedef struct {
     char parameter_flags;
@@ -56,6 +62,7 @@ typedef struct {
 
     unsigned long tcp_arr[(MAX_PORTS / LONG_BIT) + 1];
     unsigned short tcp_count;
+    AddrFlg address_flag;
 } Scanner, *ScannerPtr;
 
 ExitEnum parse_arguments(int argc, char** argv, ScannerPtr scanner);

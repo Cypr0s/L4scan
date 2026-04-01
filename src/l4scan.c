@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
         freeaddrinfo(addresses);
         return err;
     }
-
+    
     // create sockets, bind them to correct interfaces or set options for ipv6 ones
 	Sockets socks;
     init_sockets_struct(&socks); // init to -1 all

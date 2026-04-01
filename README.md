@@ -145,19 +145,241 @@ All tests were performed in Linux environment:
 >`SUDO` priviliges are required for testing the application
 
 ### Automated tests
-Automated tests are run using:
+
+Automatic tests were created to check whether program correctly parses arguments, sends correct message types to correct addresses.
+
+#### Automated tests are run using:
 ```bash
   make test   #sudo privileges required
 ```
-Automated tests test:
+#### Automated tests test:
   - Correct argument parsing
-  - Simple TCP scanning tests on localhost
-  - Simple UDP scanning tests on localhost
+  - Simple TCP scanning tests on localhost, both ipv4 and ipv6
+  - Simple UDP scanning tests on localhost, both ipv4 and ipv6
   - Correct port ranges for ports
   - -i and -help flags
 
+L**Logic of test script:**
+The `test.sh` script tests closed ports by using ports that are not used by the system. 
+Open ports are tested by temporarily opening ports using nc. 
+The scanner output is then compared with expected values using grep and each test prints OK / FAIL.
+
+#### Example automatic test
+**Context:** A local TCP port (13350) is opened using `nc`.
+
+**Command:**
+```bash
+./ipk-L4-scan -i lo -t 13350 localhost
+```
+**Expected output**
+```bash
+127.0.0.1 13350 tcp open
+```
+
+**Actual outputs:**
+```bash
+127.0.0.1 13350 tcp open
+```
+Test script checks whether expected output matches with actual output with grep
+
 ### Manual tests
 
+Manual tests were used to determine whether scanner works on an actual network
+
+#### Manual tests test:
+- Scanning on a real interface and a VPN interface
+- Scanning actual addresses (both external network addresses and LAN addresses)
+- TCP testing for both IPv4 and IPv6
+- UDP testing for both IPv4 and IPv6
+
+Testing was performed by running the program against selected target ports on network hosts. 
+Packets were tracked using Wireshark to verify correct behavior and the results were compared visually with those obtained from nmap.
+
+Tests were performed primarily on the host `scanme.nmap.org`, which is widely used for validating network scanners and supports both IPv4 and IPv6.
+
+**All commands are executed with administrator privileges**
+
+Each manual test includes:
+- the name of the test - header of test
+- context - description of test
+- program input (executed ``command``)
+- expected output (based on results from `nmap` running the same scan)
+- exit code
+- corresponding packet capture screenshot of Wireshark
+
+
+LAN tests packet captures screenshot of another device in the same network environment. 
+
+**TCP tests**
+
+#### TCP single port test 
+**Context:** Scanning a known open TCP port on a remote host.
+
+**Command:**
+```bash
+./ipk-L4-scan -i wlo1 -t 80 scanme.nmap.org
+```
+
+**Expected output:** (command `nmap -p 80 scanme.nmap.org` and `nmap -p 80 -6 scanme.nmap.org`)
+```
+45.33.32.156 80 tcp open
+2600:3c01::f03c:91ff:fe18:bb2f 80 tcp open
+```
+
+```
+**Actual output:**
+2600:3c01::f03c:91ff:fe18:bb2f 80 tcp open
+45.33.32.156 80 tcp open
+```
+
+**wireshark track**
+
+![Wireshark](images/wireshark_tcp_80.png)
+
+#### TCP closed port test
+**Context:** Scanning a TCP port expected to be closed on a remote host.
+
+**Command:**
+```bash
+./ipk-L4-scan -i wlo1 -t 81 scanme.nmap.org
+```
+
+**Expected output:** (command `nmap -p 81 scanme.nmap.org` and `nmap -p 81 -6 scanme.nmap.org`)
+```
+45.33.32.156 81 tcp closed
+2600:3c01::f03c:91ff:fe18:bb2f 81 tcp closed
+```
+
+**Actual output:**
+```
+2600:3c01::f03c:91ff:fe18:bb2f 81 tcp closed
+45.33.32.156 81 tcp closed
+```
+
+**wireshark track**
+
+![Wireshark](images/wireshark_tcp_81.png)
+
+
+#### TCP range port test
+**Context:** Scanning a range of TCP ports.
+
+**Command:**
+```bash
+./ipk-L4-scan -i wlo1 -t 79-81 scanme.nmap.org
+```
+
+**Expected output:** (command `nmap -p 79-81 scanme.nmap.org` and `nmap -p 79-81 -6 scanme.nmap.org`)
+```
+45.33.32.156 79 tcp closed
+45.33.32.156 80 tcp open
+45.33.32.156 81 tcp closed
+2600:3c01::f03c:91ff:fe18:bb2f 79 tcp closed
+2600:3c01::f03c:91ff:fe18:bb2f 80 tcp open
+2600:3c01::f03c:91ff:fe18:bb2f 81 tcp closed
+```
+
+**Actual output:**
+```
+2600:3c01::f03c:91ff:fe18:bb2f 79 tcp closed
+2600:3c01::f03c:91ff:fe18:bb2f 80 tcp open
+2600:3c01::f03c:91ff:fe18:bb2f 81 tcp closed
+45.33.32.156 79 tcp closed
+45.33.32.156 80 tcp open
+45.33.32.156 81 tcp closed
+```
+**wireshark track**
+
+![Wireshark](images/wireshark_tcp_79-81.png)
+
+#### TCP LAN filtered check
+**Context:** Scanning TCP ports on a local network device. (with approval of owner of the device)
+**Context:** port 5003 was set to be filtered with `iptables -A INPUT -p tcp --dport 5003 -j DROP`
+
+**Command:**
+```bash
+./ipk-L4-scan -i wlo1 -t 5002-5003 192.168.0.126
+```
+
+**Expected output:** (command `nmap -p 5002-5003 192.168.0.126`)
+```
+192.168.0.126 5002 tcp closed
+192.168.0.126 5003 tcp filtered
+```
+
+**Actual output:**
+```
+192.168.0.126 5002 tcp closed
+192.168.0.126 5003 tcp filtered
+```
+**wireshark track**
+Sender POV:
+
+![Wireshark](images/wireshark_tcp_5002-5003_1.png)
+
+Receiver POV:
+5003 is dropped by firewal so it doesnt show (correct behaviour)
+
+![Wireshark](images/wireshark_tcp_5002-5003_2.png)
+
+**UDP tests**
+
+#### UDP single port test
+**Context:** Scanning single UDP port
+
+**Command:**
+```bash
+./ipk-L4-scan -i wlo1 -u 53 scanme.nmap.org
+```
+
+**Expected output:** (command `nmap -sU -p 53 scanme.nmap.org` and `nmap -sU -p 53 -6 scanme.nmap.org`)
+```
+45.33.32.156 53 udp closed
+2600:3c01::f03c:91ff:fe18:bb2f 53 closed
+```
+
+**Actual output:**
+```
+2600:3c01::f03c:91ff:fe18:bb2f 53 udp closed
+45.33.32.156 53 udp closed
+```
+**wireshark track**
+
+![Wireshark](images/wireshark_udp_53.png)
+
+#### UDP LAN open closed test
+**Context:** Scanning UDP ports on a local network device. (with approval of owner of the device)
+**Context:** port 5001 was opened with nc
+
+**Command:**
+```bash
+./ipk-L4-scan -i wlo1 -u 5000-5002 192.168.0.126
+```
+
+**Expected output:** (command `sudo nmap -sU -p 5000-5002 192.168.0.126`) 
+```
+192.168.0.126 5000 udp closed
+192.168.0.126 5001 udp open
+192.168.0.126 5002 udp closed
+```
+
+**Actual output:**
+```
+192.168.0.126 5000 udp closed
+192.168.0.126 5001 udp open
+192.168.0.126 5002 udp closed
+```
+**wireshark track**
+
+Program receiver POV:
+![Wireshark](images/wireshark_udp_5000-5002_2.png)
+
+
+
+## Ai usage
+- AI model was used in this project in:
+  -   formatting the README file (the content was written by author of this repo)
+  -   generating local test cases based on the specified sample
 
 
 ## *Known* Limitations
