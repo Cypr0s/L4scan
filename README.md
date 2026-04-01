@@ -388,9 +388,6 @@ Program receiver POV:
   For large port ranges, by the time a specific entry is checked, more time may have passed than the set timeout, 
   causing a port to be marked different state that it would have even if a response arrived just after the threshold.
 
-- **IPv6 requires global address** — the interface must have a global IPv6 address.
-  Interfaces with only link-local addresses cannot be used for IPv6 scanning.
-
 - **IPv6 source address mismatch** — when an interface has multiple global IPv6 addresses, 
 the address the kernel uses for sending may differ from the one the program selected, causing responses to not be recognized.
 
