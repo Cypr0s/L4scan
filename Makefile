@@ -1,4 +1,4 @@
-#-------------- IPK 1. project -----------------
+#-------------- IPK 1. project ----------------
 #	file:	Makefile
 # 	Author: Kristian Luptak <xluptak00>
 #	date: 	created: 	11.3.2026
