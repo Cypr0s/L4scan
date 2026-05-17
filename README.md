@@ -1,4 +1,4 @@
-# IPK project 1 - L4 Scanner
+# L4scan
 
 ## Overview
 
@@ -8,6 +8,7 @@ to send probes on defined IP address / hostname while using threads per single a
 used for sending and checking timeout of each entry/probe, while the other is listening for replies 
 using libpcap library.
 
+This repository was created as a school assignment for the IPK course at VUT FIT.
 
 ## Build
 
@@ -24,7 +25,7 @@ make clean
 ## Usage
 >**PROGRAM MUST BE RUN USING ADMINISTRATOR PRIVILEGES DUE TO RAW SOCKETS**
 ```bash
-./ipk-L4-scan -i INTERFACE [-t PORTS] [-u PORTS] HOST [-w TIMEOUT]
+./L4scan -i INTERFACE [-t PORTS] [-u PORTS] HOST [-w TIMEOUT]
 ```
 **Mandatory arguments** are `INTERFACE`, `HOST` and atleast one `PORT`
 
@@ -47,19 +48,19 @@ Ports must be in ranges 1-665535 and can be defined as (1-500 or 1,25,2 or 5 ) n
 
 ```bash
 #print all avaibale interfaces
-./ipk-L4-scan -i
+./L4scan -i
 ```
 ```bash
 #scan 2 localhost UDP ports
-sudo ./ipk-L4-scan -i eth0 -u 53,67 localhost
+sudo ./L4scan -i eth0 -u 53,67 localhost
 ```
 ```bash
 #scan address for UDP and TCP ports
-sudo ./ipk-L4-scan -i eth0 -u 80,440  192.168.0.1 -t 80,443
+sudo ./L4scan -i eth0 -u 80,440  192.168.0.1 -t 80,443
 ```
 ```bash
 #send help message
-./ipk-L4-scan --help
+./L4scan --help
 ```
 ### Output format
 
@@ -67,7 +68,7 @@ Program outputs one or more lines each containing: `IP PORT PROTOCOL STATE`.
 
 Example:
 ```bash
-sudo ./ipk-L4-scan -i lo -t 80,443 localhost
+sudo ./L4scan -i lo -t 80,443 localhost
 ```
 ```
 127.0.0.1 80 tcp closed
@@ -169,7 +170,7 @@ The scanner output is then compared with expected values using grep and each tes
 
 **Command:**
 ```bash
-./ipk-L4-scan -i lo -t 13350 localhost
+./L4scan -i lo -t 13350 localhost
 ```
 **Expected output**
 ```bash
@@ -217,7 +218,7 @@ LAN tests packet captures screenshot of another device in the same network envir
 
 **Command:**
 ```bash
-./ipk-L4-scan -i wlo1 -t 80 scanme.nmap.org
+./L4scan -i wlo1 -t 80 scanme.nmap.org
 ```
 
 **Expected output:** (command `nmap -p 80 scanme.nmap.org` and `nmap -p 80 -6 scanme.nmap.org`)
@@ -241,7 +242,7 @@ LAN tests packet captures screenshot of another device in the same network envir
 
 **Command:**
 ```bash
-./ipk-L4-scan -i wlo1 -t 81 scanme.nmap.org
+./L4scan -i wlo1 -t 81 scanme.nmap.org
 ```
 
 **Expected output:** (command `nmap -p 81 scanme.nmap.org` and `nmap -p 81 -6 scanme.nmap.org`)
@@ -266,7 +267,7 @@ LAN tests packet captures screenshot of another device in the same network envir
 
 **Command:**
 ```bash
-./ipk-L4-scan -i wlo1 -t 79-81 scanme.nmap.org
+./L4scan -i wlo1 -t 79-81 scanme.nmap.org
 ```
 
 **Expected output:** (command `nmap -p 79-81 scanme.nmap.org` and `nmap -p 79-81 -6 scanme.nmap.org`)
@@ -298,7 +299,7 @@ LAN tests packet captures screenshot of another device in the same network envir
 
 **Command:**
 ```bash
-./ipk-L4-scan -i wlo1 -t 5002-5003 192.168.0.126
+./L4scan -i wlo1 -t 5002-5003 192.168.0.126
 ```
 
 **Expected output:** (command `nmap -p 5002-5003 192.168.0.126`)
@@ -329,7 +330,7 @@ Receiver POV:
 
 **Command:**
 ```bash
-./ipk-L4-scan -i wlo1 -u 53 scanme.nmap.org
+./L4scan -i wlo1 -u 53 scanme.nmap.org
 ```
 
 **Expected output:** (command `nmap -sU -p 53 scanme.nmap.org` and `nmap -sU -p 53 -6 scanme.nmap.org`)
@@ -353,7 +354,7 @@ Receiver POV:
 
 **Command:**
 ```bash
-./ipk-L4-scan -i wlo1 -u 5000-5002 192.168.0.126
+./L4scan -i wlo1 -u 5000-5002 192.168.0.126
 ```
 
 **Expected output:** (command `sudo nmap -sU -p 5000-5002 192.168.0.126`) 

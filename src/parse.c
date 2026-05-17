@@ -1,4 +1,4 @@
-/** -------------- IPK 1. project - L4 Scanner -----------------
+/** -------------- L4scan -----------------
  * @file    parse.c
  * @author  Kristian Luptak <xluptak00>
  * @date    creation:   11.3.2026
@@ -12,7 +12,7 @@
 #include "parse.h"
 
 
-const char* help_message =  " USAGE: ./ipk-L4-scan -i INTERFACE [-u PORTS] [-t PORTS] HOST [-w TIMEOUT] [-h | --help] where\n\n"
+const char* help_message =  " USAGE: ./L4scan -i INTERFACE [-u PORTS] [-t PORTS] HOST [-w TIMEOUT] [-h | --help] where\n\n"
                             " REQUIRED PARAMETERS: -i \n"
                             "                      HOSTNAME\n"
                             "                      atleast one port -u or -t\n\n"

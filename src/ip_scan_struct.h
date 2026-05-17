@@ -1,3 +1,11 @@
+/** -------------- L4scan -----------------
+ * @file    ip_scan_struct.h
+ * @author  Kristian Luptak <xluptak00>
+ * @date    creation:   18.3.2026
+ *          updated:    22.3.2026
+ * @brief   File contains every function that sets, resets or handles anything related
+ *          to ipscan structure
+ */
 #ifndef IP_SCAN_STRUCT_H
 #define IP_SCAN_STRUCT_H
 

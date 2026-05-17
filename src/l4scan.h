@@ -1,4 +1,4 @@
-/** -------------- IPK 1. project - L4 Scanner -----------------
+/** -------------- L4scan -----------------
  * @headerfile  l4scan.h
  * @author      Kristian Luptak <xluptak00>
  * @date        creation:   11.3.2026

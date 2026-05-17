@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCANNER="./ipk-L4-scan"
+SCANNER="./L4scan"
 INTERFACE="lo"
 
 pass() { echo "$1 OK"; }
