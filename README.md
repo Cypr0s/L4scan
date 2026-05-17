@@ -406,3 +406,4 @@ the address the kernel uses for sending may differ from the one the program sele
 - [pthread documentation](https://man7.org/linux/man-pages/man7/pthreads.7.html)
 - [getifaddrs man page](https://man7.org/linux/man-pages/man3/getifaddrs.3.html)
 - [errno man page](https://man7.org/linux/man-pages/man3/errno.3.html)
+- [Gitea IPK assignment](https://git.fit.vutbr.cz/NESFIT/IPK-Project1)
