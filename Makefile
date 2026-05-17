@@ -1,4 +1,4 @@
-#-------------- IPK 1. project ----------------
+#-------------- L4-scan ----------------
 #	file:	Makefile
 # 	Author: Kristian Luptak <xluptak00>
 #	date: 	created: 	11.3.2026
@@ -17,12 +17,11 @@ OBJ= 	ip_scan_struct.o	\
 		util.o				\
 		hostname.o			\
 		sockets.o
-OUT= ipk-L4-scan
 
 #utils
 DEVSHELL=c
 
-ZIP_NAME=xluptak00
+ZIP_NAME = L4scan
 
 TEST_FILE=test.sh
 
@@ -50,7 +49,7 @@ test: all
 
 # zip
 zip:
-	zip -r $(ZIP_NAME).zip Makefile LICENSE CHANGELOG.md README.md test.sh src images -x *.o
+	zip -r $(OUT).zip Makefile LICENSE CHANGELOG.md README.md test.sh src images -x *.o
 
 # clean
 clean:
