@@ -1,7 +1,5 @@
 # L4scan
 
-## Overview
-
 Simple network L4 scanner that works both for UDP and TCP protocol on IPV4 and IPV6 addresses. 
 Program uses raw sockets for TCP (program builds own SYN packets) and DGRAM sockets for UDP 
 to send probes on defined IP address / hostname while using threads per single address - one  is 
